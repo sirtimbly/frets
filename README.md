@@ -1,7 +1,7 @@
-# SAMWise
+# FRETS (Functional, Reactive, entirely TypeScript)
 ## An Ultralight Composable Frontend TypeScript Web Framework
 
-SAMWise is a set of classes and interfaces to make it easy for you to write code that complies (mostly) with the SAM pattern. You can get all the reassurance of reliable code completion and type checking while still writing "pure" functional code. I think classes made up of functions are a perfectly valid way of giving developers the convenience of automatic code completion, and the other advantages of the Typescript tooling world. Making a developer remember all the variable names or massive copy-pasting is the enemy of clean bug-free code.
+FRETS (formerly SAMWise) is a set of classes and interfaces to make it easy for you to write code that complies (mostly) with the SAM pattern. You can get all the reassurance of reliable code completion and type checking while still writing "pure" functional code. I think classes made up of functions are a perfectly valid way of giving developers the convenience of automatic code completion, and the other advantages of the Typescript tooling world. Making a developer remember all the variable names or massive copy-pasting is the enemy of clean bug-free code.
 
 To explain the framework, Let me work backwards through the SAM application pattern starting from the UI rendering in the browser.
 
