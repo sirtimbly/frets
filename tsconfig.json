@@ -1,0 +1,25 @@
+{
+    "compilerOptions": {
+        "outDir": "./dist/",
+        "allowJs": true,
+        "sourceMap": true,
+        "noImplicitAny": false,
+        "skipLibCheck": true,
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "target": "es5",
+        "lib": [
+            "es6",
+            "dom"
+        ],
+        "types" : [
+            "node"
+          ],
+        "experimentalDecorators": true,
+        "allowSyntheticDefaultImports": false,
+        "baseUrl": "." // required for "paths"
+    },
+    "include": [
+        "src/**/*.ts"
+    ]
+}
