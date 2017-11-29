@@ -116,6 +116,6 @@
   },
   "dependencies": {
     "tslib": "^1.6.0",
-    "maquette": "^2.5.4"
+    "maquette": "^3.0.1"
   }
 }

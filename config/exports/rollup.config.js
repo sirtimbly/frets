@@ -5,7 +5,7 @@ import alias from 'rollup-plugin-alias';
 
 const substituteModulePaths = {
     'crypto': 'build/module/adapters/crypto.browser.js',
-    'maquette': 'node_modules/maquette/dist/maquette.js',
+    'maquette': 'node_modules/maquette/dist/index.js',
     'hash.js': 'build/temp/hash.js'
 }
 
@@ -17,6 +17,13 @@ export default {
         nodeResolve({
             browser: true
         }),
-        commonjs()
+        commonjs({
+            namedExports: {
+              // left-hand side can be an absolute path, a path
+              // relative to the current directory, or the name
+              // of a module in node_modules
+              'maquette': [ 'Projector', 'createProjector' ]
+            }
+        })
     ]
 }
