@@ -5,9 +5,9 @@ pages:
     - node_modules/
   script:
   - npm install
-  - ./node_modules/.bin/typedoc src/index.ts --excludePrivate --mode file --theme minimal --out pages/docs
+  - ./node_modules/.bin/typedoc src/index.ts --excludePrivate --mode file --theme minimal --out public/docs
   artifacts:
     paths:
-    - pages/docs/
+    - public/docs/
   only:
     - master
