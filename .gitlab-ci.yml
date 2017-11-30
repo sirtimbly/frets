@@ -5,7 +5,7 @@ pages:
     - node_modules/
   script:
   - npm install
-  - npm run docs
+  - typedoc src/index.ts --excludePrivate --mode file --theme minimal --out build/docs
   artifacts:
     paths:
     - build/docs/
