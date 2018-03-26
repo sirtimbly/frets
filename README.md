@@ -5,7 +5,7 @@
 
 `npm install --save frets`
 
-Read the [API docs](https://gitlab.com/FRETS/frets)
+Read the [API docs](https://frets.gitlab.io/frets/docs)
 
 
 The basic app lifecycle: 
