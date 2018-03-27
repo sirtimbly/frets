@@ -7,19 +7,90 @@
 
 Read the [API docs](https://frets.gitlab.io/frets/docs)
 
+The basic SAM app lifecycle:
+Action() -> Model -> State() -> View() -> {wait for client events that call an Action()}
 
-The basic app lifecycle: 
-Action() -> Model -> State() -> View() -> {wait for events that call actions}
+Note:
+> In FRETS the part of "Model" will be played by a function called "validate", and the part of "state" will be played by a function call "calculate". Sometimes, the "View" function is called the "Render" function - in case that helps you wrap your mind around things.
+
+## Quick Setup
+
+Create a class for your data model properties.
+
+```ts
+
+export class TodoListProps {
+  public name: string;
+  public email: string;
+  public todos: string[];
+  public complete: string[];
+
+  constructor() {
+    // set some defaults
+  }
+
+```
+
+Create a class for your data mutation actions, but don't implement the function body yet.
+
+```ts
+export class TodoListActions {
+  public saveName: (e: Event) => void;
+  // and the rest with this same signature
+}
+```
+
+You now have the classes to start up a new FRETS object. Once it's instantiated with some default values and a copy of your actions class you _can_ just mount it to the dom... but you definitely still want a rendering method for displaying your data.
+
+```ts
+const F = new FRETS<TodoListProps, TodoListActions>(new TodoListProps(), new TodoListActions());
+
+F.mountTo("mainapp");
+```
+
+To create a render view you need a plain function that accepts as parameters: a instance of the model properties and a instance of the actions class.
+
+```ts
+const renderRootView = (props: TodoListProps, actions: TodoListActions): VNode => {
+  return $$().div.flex.flexColumn.justifyAround.h([
+    $$().h2.h(["hello world"]),
+    $$().button.btn.h(["click me"]),
+  ]);
+
+
+F.registerView(renderRootView);
+```
+
+That atomic CSS fluent dom syntax is pretty powerful - it comes from [https://gitlab.com/FRETS/frets-styles-generator](https://gitlab.com/FRETS/frets-styles-generator), but you still need to be able to specify your actions and your state calculation method.
+
+```ts
+// Register an action function (overwriting an existing property you defined on your Actions class)
+F.actions.changeName = F.registerAction((e: Event, data: TodoListProps) => {
+  data.name = (e.target as HTMLInputElement).value;
+  // add action specific business logic here, but not validation
+  // also you can add 3rd party API calls here
+  return data;
+});
+
+// Register the state calculation function
+F.calculator = (newProps: TodoListProps, oldProps: TodoListProps): TodoListProps => {
+  // add your derived state business logic here
+  return newProps
+};
+
+```
+
+And, that's the short version. You can call `F.mountTo("some_id")` and after a build your app should be fully reactive. I recommend configuring webpack with hot-reloading. It's super helpful. There's no special webpack plugins required for FRETS development - just `tsloader` for typescript support.
 
 ## What and Why?
 
-FRETS is a set of classes and interfaces to make it easy for you to write code that complies (mostly) with the SAM pattern. You can get all the reassurance of reliable code completion and type checking while still writing "pure" functional code. I think classes made up of functions are a perfectly valid way of giving developers the convenience of automatic code completion, and the other advantages of the Typescript tooling world. Making a developer remember all the variable names or massive copy-pasting is the enemy of clean bug-free code.
+FRETS is a set of classes and interfaces to make it easy for you to write code that complies (mostly) with the SAM pattern. You can get all the reassurance of reliable code completion and type checking while still writing "pure" render functions. I think classes made up of functions are a perfectly valid way of giving developers the convenience of automatic code completion, and the other advantages of the Typescript tooling world. Making a developer remember all the variable names or massive copy-pasting is the enemy of clean bug-free code.
 
 To explain the framework, Let me work backwards through the SAM application pattern starting from the UI rendering in the browser.
 
 ## Views
 
-In SAM every piece of your UI should be a pure function that updates the DOM in some way. Reusability comes from classic refactoring and composition of functions, without learning any new ceremony of a component object structure. Your view rendering code should be modular and composable, these aspects tend to emerge as the developer starts programming and sees the need to refactor continuously.
+In SAM every piece of your UI should be a pure function that generates a new DOM tree in some way. Reusability comes from classic refactoring and composition of functions, without learning any new ceremony of a component object structure. Your view rendering code should be modular and composable, these aspects tend to emerge as the developer starts programming and sees the need to refactor continuously.
 
 I originally was playing around with [Mithril](https://mithril.js.org/) and attempting to integrate it as a VirtualDom rendering implementation of the SAM pattern. But Mithril was not very TypeScript friendly, and a little searching revealed [Maquette](https://maquettejs.org/), a smaller and lighter TypeScript implementation of the hyperscript rendering interface that Mithril (and react) give us. It might even be more performant, depending on how you measure. It's not perfect, but it is under active development and I think the value of a solidly implemented hyperscript rendering library, decoupled from the big projects, that we can build upon is of significant value.
 
@@ -29,7 +100,7 @@ What data does your view function render? Well, it's just a plain old JavaScript
 
 In Samwise you keep all your high level view functions that accept that global state data object in one class to make refactoring easy and painless.
 
-## State 
+## State
 
 State is a simple class that is responsible for calling those "View" render methods. You instantiate a new Samwise state object specifying the render function you want (with a default assumption that you're using the Maquette projector for updating the dom). This state representer function will also recieve a preRender function to do any special calculations or logic for deriving transient properties in the application state from the values of the data properties object that it is passed. Things like warning messages, loading indicators, visibility switching, and in-app navigation or routing.
 
@@ -39,7 +110,7 @@ The state was called by a function on your Model class called "present". General
 
 ## Action
 
-The Model was asked to update itself by a function on your Action class. This action class should be a new class that you wrote for this application which extends the Samwise ViewActions class. Your custom actions class will contain all the functions that your application might call to ever change data or state. These functions will have been bound to the event handlers on the dom, or timers or other reactive events. This practice makes sure you know exactly where to look for any change that was made to your application state, and you get code completion in your Views for this class because of the power of Generic Types. 
+The Model was asked to update itself by a function on your Action class. This action class should be a new class that you wrote for this application which extends the Samwise ViewActions class. Your custom actions class will contain all the functions that your application might call to ever change data or state. These functions will have been bound to the event handlers on the dom, or timers or other reactive events. This practice makes sure you know exactly where to look for any change that was made to your application state, and you get code completion in your Views for this class because of the power of Generic Types.
 
 ## Diving back down
 
@@ -84,7 +155,7 @@ What data does your view function render? Well, it's just a plain old JavaScript
 
 In Samwise you keep all your high level view functions that accept that global state data object in one class to make refactoring easy and painless.
 
-## State 
+## State
 
 State is a simple class that is responsible for calling those "View" render methods. You instantiate a new Samwise state object specifying the render function you want (with a default assumption that you're using the Maquette projector for updating the dom). This state representer function will also recieve a preRender function to do any special calculations or logic for deriving transient properties in the application state from the values of the data properties object that it is passed. Things like warning messages, loading indicators, visibility switching, and in-app navigation or routing.
 
@@ -94,7 +165,7 @@ The state was called by a function on your Model class called "present". General
 
 ## Action
 
-The Model was asked to update itself by a function on your Action class. This action class should be a new class that you wrote for this application which extends the Samwise ViewActions class. Your custom actions class will contain all the functions that your application might call to ever change data or state. These functions will have been bound to the event handlers on the dom, or timers or other reactive events. This practice makes sure you know exactly where to look for any change that was made to your application state, and you get code completion in your Views for this class because of the power of Generic Types. 
+The Model was asked to update itself by a function on your Action class. This action class should be a new class that you wrote for this application which extends the Samwise ViewActions class. Your custom actions class will contain all the functions that your application might call to ever change data or state. These functions will have been bound to the event handlers on the dom, or timers or other reactive events. This practice makes sure you know exactly where to look for any change that was made to your application state, and you get code completion in your Views for this class because of the power of Generic Types.
 
 ## Diving back down
 
