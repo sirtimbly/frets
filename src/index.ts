@@ -1,4 +1,4 @@
-import { FRETS } from "./Frets";
+export { FRETS } from "./Frets";
 export { IActions, ViewActions } from "./Actions";
 export { App } from "./App";
 export { AppState, IState } from "./State";

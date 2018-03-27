@@ -2,15 +2,17 @@ import { createProjector, h, Projector, VNode } from "maquette";
 
 export class FRETS<T, U> {
 
+  public registerAction: (actionFn: (e: Event, data: T) => T) => (e: Event) => any;
   private projector: Projector;
-  private assignAction: (actionFn: (e: Event, data: T) => T) => (e: Event) => any;
+
   constructor(public modelProps: T, public actions: U) {
+    const context = this;
     this.projector = createProjector();
-    this.assignAction = this.makeActionStately( function stateUpdater(props: T): void {
-      props = this.validator(props, this.modelProps);
-      props = this.calculator(props, this.modelProps);
-      this.modelProps = props; // the one and only place where this gets mutated!
-      this.projector.scheduleRender();
+    this.registerAction = this.makeActionStately( function stateUpdater(props: T): void {
+      props = context.validator(props, context.modelProps);
+      props = context.calculator(props, context.modelProps);
+      context.modelProps = props; // the one and only place where state gets mutated!
+      context.projector.scheduleRender();
     }, this.modelProps);
   }
   // these methods should be overwritten by the User, but work with these defaults
