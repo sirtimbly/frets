@@ -1,6 +1,6 @@
 {
   "name": "frets",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Functional, Reactive, TypeScript - An Ultralight Composable Frontend TypeScript Web Framework",
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",
@@ -116,7 +116,7 @@
   },
   "dependencies": {
     "funfix": "^7.0.1",
-    "maquette": "^3.0.1",
-    "tslib": "^1.6.0"
+    "maquette": "^3.2.2",
+    "tslib": "^1.9.0"
   }
 }
