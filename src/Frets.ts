@@ -9,10 +9,7 @@ export class FRETS<T, U> {
     const context = this;
     this.projector = createProjector();
     this.registerAction = this.makeActionStately( function stateUpdater(props: T): void {
-      props = context.validator(props, context.modelProps);
-      props = context.calculator(props, context.modelProps);
-      context.modelProps = props; // the one and only place where state gets mutated!
-      context.projector.scheduleRender();
+      context.render(props);
     }, this.modelProps);
   }
   // these methods should be overwritten by the User, but work with these defaults
@@ -24,6 +21,13 @@ export class FRETS<T, U> {
   public registerView = (renderFn: (props: T, actions: U) => VNode) => {
       this.stateRenderer = () => renderFn(this.modelProps, this.actions);
     }
+
+  public render = (props: T) => {
+    props = this.validator(props, this.modelProps);
+    props = this.calculator(props, this.modelProps);
+    this.modelProps = props; // the one and only place where state gets mutated!
+    this.projector.scheduleRender();
+  }
   public mountTo = (id: string) => {
       this.projector.replace(document.getElementById(id), this.stateRenderer);
   }
