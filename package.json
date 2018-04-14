@@ -32,7 +32,7 @@
     "docs:json": "typedoc --mode file --json public/docs/typedoc.json src/index.ts",
     "docs:publish": "yarn docs:html && gh-pages -d public/docs",
     "changelog": "standard-version",
-    "release": "yarn reset && yarn test && yarn docs:publish && yarn changelog",
+    "release": "yarn reset && yarn test && yarn docs && yarn changelog",
     "reset": "git clean -dfx && git reset --hard && yarn"
   },
   "scripts-info": {
