@@ -115,7 +115,6 @@
     ]
   },
   "dependencies": {
-    "funfix": "^7.0.1",
     "maquette": "^3.2.2",
     "tslib": "^1.9.0"
   }
