@@ -27,10 +27,10 @@
     "cov": "yarn unit && yarn html-coverage && opn coverage/index.html",
     "html-coverage": "nyc report --reporter=html",
     "send-coverage": "nyc report --reporter=lcov > coverage.lcov && codecov",
-    "docs": "yarn docs:html && opn build/docs/index.html",
+    "docs": "yarn docs:html && opn public/docs/index.html",
     "docs:html": "typedoc src/index.ts --excludePrivate --mode file --theme minimal --out public/docs",
-    "docs:json": "typedoc --mode file --json build/docs/typedoc.json src/index.ts",
-    "docs:publish": "yarn docs:html && gh-pages -d build/docs",
+    "docs:json": "typedoc --mode file --json public/docs/typedoc.json src/index.ts",
+    "docs:publish": "yarn docs:html && gh-pages -d public/docs",
     "changelog": "standard-version",
     "release": "yarn reset && yarn test && yarn docs:publish && yarn changelog",
     "reset": "git clean -dfx && git reset --hard && yarn"
