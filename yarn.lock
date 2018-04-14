@@ -2025,40 +2025,6 @@ function-name-support@^0.2.0:
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/function-name-support/-/function-name-support-0.2.0.tgz#55d3bfaa6eafd505a50f9bc81fdf57564a0bb071"
 
-funfix-core@^7.0.1:
-  version "7.0.1"
-  resolved "https://registry.yarnpkg.com/funfix-core/-/funfix-core-7.0.1.tgz#894a9f39ef582c5d6dcc9ef384381d12819e8094"
-  dependencies:
-    funland "^0.1.4"
-
-funfix-effect@^7.0.1:
-  version "7.0.1"
-  resolved "https://registry.yarnpkg.com/funfix-effect/-/funfix-effect-7.0.1.tgz#715f0c55a59ae520595da7e39f9ab1e239544069"
-  dependencies:
-    funfix-core "^7.0.1"
-    funfix-exec "^7.0.1"
-    funland "^0.1.4"
-
-funfix-exec@^7.0.1:
-  version "7.0.1"
-  resolved "https://registry.yarnpkg.com/funfix-exec/-/funfix-exec-7.0.1.tgz#82e476ec4a29817ccb4740b1700c0a1d9c17734e"
-  dependencies:
-    funfix-core "^7.0.1"
-    funland "^0.1.4"
-
-funfix@^7.0.1:
-  version "7.0.1"
-  resolved "https://registry.yarnpkg.com/funfix/-/funfix-7.0.1.tgz#aa33b71622b18bc65570795e1f75199f09bdadda"
-  dependencies:
-    funfix-core "^7.0.1"
-    funfix-effect "^7.0.1"
-    funfix-exec "^7.0.1"
-    funland "^0.1.4"
-
-funland@^0.1.4:
-  version "0.1.4"
-  resolved "https://registry.yarnpkg.com/funland/-/funland-0.1.4.tgz#b2b6df1ce691a0c811304c03310341aa3175ad05"
-
 gauge@~2.7.3:
   version "2.7.4"
   resolved "https://registry.yarnpkg.com/gauge/-/gauge-2.7.4.tgz#2c03405c7538c39d7eb37b317022e325fb018bf7"

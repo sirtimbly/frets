@@ -2,8 +2,8 @@
     "compilerOptions": {
         "outDir": "build/main",
         "declaration": true,
-        
-        "sourceMap": true,
+        "inlineSourceMap": true,
+        //"sourceMap": true,
         "noImplicitAny": false,
         "skipLibCheck": true,
         "module": "commonjs",
@@ -18,7 +18,12 @@
           ],
         "experimentalDecorators": true,
         "allowSyntheticDefaultImports": false,
-        "baseUrl": "." // required for "paths"
+        "baseUrl": ".", // required for "paths",
+        "paths": {
+            "frets": [
+                "src/index.ts"
+            ] // write tests without relative paths
+        }
     },
     "include": [
         "src/**/*.ts"
