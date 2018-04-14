@@ -1,3 +1,4 @@
+export { IFretsProps } from "./IFretsProps";
 export { FRETS } from "./Frets";
 export { IActions, ViewActions } from "./Actions";
 export { App } from "./App";
