@@ -1,9 +1,13 @@
 # FRETS (Functional, Reactive, entirely TypeScript)
 ## An Ultralight Composable Frontend TypeScript Web Framework
 
+![FRETS logo](http://uploads.timbendt.com.s3.amazonaws.com/dropzone/fretslogo4@1x.png)
+
 ## Getting Started
 
 `npm install --save frets`
+
+Use [the Starter Project](https://github.com/sirtimbly/frets-starter) to get going quickly.
 
 Read the [API docs](https://frets.gitlab.io/frets/docs)
 
