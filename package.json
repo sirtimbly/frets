@@ -115,6 +115,7 @@
     ]
   },
   "dependencies": {
+    "express": "^4.16.3",
     "maquette": "^3.2.2",
     "tslib": "^1.9.0"
   }
