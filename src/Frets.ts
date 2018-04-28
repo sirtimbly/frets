@@ -1,6 +1,6 @@
-import { createProjector, h, Projector, VNode, CalculationCache } from "maquette";
+import { CalculationCache, createProjector, h, Projector, VNode } from "maquette";
 // import IFretsComponent from './IFretsComponent';
-import * as maquette from 'maquette';
+import * as maquette from "maquette";
 
 /**
  * FRETS class is the main way to instantiate a new application and hang your models, actions, and state off it
