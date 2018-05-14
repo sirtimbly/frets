@@ -51,13 +51,14 @@ export class FRETS<T, U> {
  */
   public registerViewAsync = async (renderFn: (props: T, actions: U) => Promise<VNode>) => {
     this.stateRenderer = () => {
-      // console.log("allow async render: " + this.allowAsyncRender);
+      // console.log("Async state render function executing. allow async render: " + this.allowAsyncRender);
       if (this.allowAsyncRender) {
         renderFn(this.modelProps, this.actions).then((n: VNode) => {
             // at this point the lazy loading should be complete so let's invalidate the cache and render again once
             this.cache.invalidate();
             this.allowAsyncRender = false;
-            // console.log("loaded view code, scheduling render");
+
+            // console.log("loaded view code, scheduling render with new VNode");
             this.cachedNode = n;
             this.render(this.modelProps);
           });
@@ -74,10 +75,10 @@ export class FRETS<T, U> {
   public render = (props: T) => {
     // console.log("Render: checking the cache");
     this.cache.result([props], () => {
-      // console.log("Render: props have changed");
       props = this.validator(props, this.modelProps);
       props = this.calculator(props, this.modelProps);
       this.modelProps = props; // the one and only place where state gets mutated!
+      // console.log("Render: props have changed. ", JSON.stringify(this.modelProps));
       this.projector.scheduleRender();
       return props;
     });
@@ -90,13 +91,24 @@ export class FRETS<T, U> {
   public mountTo = (id: string) => {
       this.projector.merge(document.getElementById(id), this.stateRenderer);
   }
+
+  /**
+   * Returns a function that accepts an action function, Wraps the action with our necessary hooks, and returns a
+   * funtion compatible with the standard Maquette event handler signature
+   * @param  {(props:T)=>void} presenterFn A reference to the main FRETS render function for this instance.
+   * @param  {T} data
+   */
   public makeActionStately = (presenterFn: (props: T) => void, data: T) => {
     // this function will return functions that can be used as actions in a view
     return (actionFn: (e: Event, data: T) => T) => {
       return (e: Event) => {
         // since state has probably changed lets allow async rendering once
+        // console.log("event handled: action " + actionFn.name + " event.target = " + (e.target as HTMLElement).id);
         this.allowAsyncRender = true;
-        presenterFn(actionFn(e, data));
+        let newData = actionFn(e, data);
+        newData = this.validator(newData, this.modelProps);
+        newData = this.calculator(newData, this.modelProps);
+        presenterFn(newData);
       };
     };
   }
@@ -113,7 +125,7 @@ export class FRETS<T, U> {
 
   /**
    * Check for any properties that are invalid or out of bounds and either reset them or add validation/warning messages
-   *  somewhere on the props for display.
+   *  somewhere on the props for display. Please make this function idempotent.
    * @param  {T} newProps
    * @param  {T} oldProps
    */
@@ -121,6 +133,7 @@ export class FRETS<T, U> {
 
   /**
    * The primary state calculation method, looks at all the properties and updates any derived values based on changes.
+   * Please make this function idempotent.
    * @param  {T} newProps
    * @param  {T} oldProps
    */
