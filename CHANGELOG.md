@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.2.7"></a>
+## [0.2.7](https://gitlab.com/FRETS/frets/compare/v0.2.6...v0.2.7) (2018-05-14)
+
+
+
 <a name="0.2.6"></a>
 ## [0.2.6](https://gitlab.com/FRETS/frets/compare/v0.2.5...v0.2.6) (2018-04-28)
 Adding support for async rendering functions. This means you can use [lazy loading](https://webpack.js.org/guides/lazy-loading/) to make your view components only load what's needed when it's needed [using async functions in typescript](https://blog.mariusschulz.com/2018/01/14/code-splitting-with-import-typescript-and-webpack).
