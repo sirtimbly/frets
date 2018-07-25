@@ -120,7 +120,14 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
       };
     };
   }
-
+  /**
+   * Registers simple form fields on the property model, and on the actions to update it. If the field key hasn't been
+   * registered yet, it initializes that value on the properties with the value passed in. This makes it so that UI
+   * functions can register themselves on the props and the actions without the root app needing to know about it.
+   * @param  {string} key
+   * @param  {string} value?
+   * @returns IRegisteredField
+   */
   public registerField = (key: string, value?: string): IRegisteredField => {
     if (!this.modelProps.registeredFieldsValues[key]) {
       this.modelProps.registeredFieldsValues[key] = value || "";

@@ -17,6 +17,13 @@ Action() -> Model -> State() -> View() -> {wait for client events that call an A
 Note:
 > In FRETS the part of "Model" will be played by a function called "validate", and the part of "state" will be played by a function call "calculate". Sometimes, the "View" function is called the "Render" function - in case that helps you wrap your mind around things.
 
+## Philosophical Rules
+
+1. Optimize for Developer Ergonomics
+2. No Magic Strings
+3. No Configuration Objects (Use TS Classes)
+4. Encourage Functional Programming Models
+
 ## Quick Setup
 
 Create a class for your data model properties.
@@ -85,6 +92,10 @@ F.calculator = (newProps: TodoListProps, oldProps: TodoListProps): TodoListProps
 ```
 
 And, that's the short version. You can call `F.mountTo("some_id")` and after a build your app should be fully reactive. I recommend configuring webpack with hot-reloading. It's super helpful. There's no special webpack plugins required for FRETS development - just `tsloader` for typescript support.
+
+## Registry: Simple Form Fields on the State
+
+When you are creating an app in FRETS normally, for every single piece of data you have to create a property on your model class and an updater action on your actions class. This can become tedius when you are simply storing and displaying strings from a form input. To overcome this FRETS now offers a method called `registerField()` which takes a string as it's key. This adds values storage, validation storage, and updater actions to the props and actions inside the FRETS app. These are then accessible through the `getField()` method or directly on the `props.registeredFields` object. The updater action expects to receive a change event with a target of type `HTMLInputElement`. Though this approach sort of breaks "Rule 2: No Magic Strings", it greatly reduces boilerplate code and enables greater opportunities for recursive or dynamic UI generation.
 
 ## What and Why?
 
