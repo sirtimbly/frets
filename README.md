@@ -101,7 +101,7 @@ And, that's the short version. You can call `F.mountTo("some_id")` and after a b
 
 When you are creating an app in FRETS normally, for every single piece of data you have to create a property on your model class and an updater action on your actions class. This can become tedius when you are simply storing and displaying strings from a form input. To overcome this FRETS now offers a method called `registerField()` which takes a string as it's key. This adds values storage, validation storage, and updater actions to the props and actions inside the FRETS app. These are then accessible through the `getField()` method or directly on the `props.registeredFields` object. The updater action expects to receive a change event with a target of type `HTMLInputElement`. Though this approach sort of breaks "Rule 2: No Magic Strings", it greatly reduces boilerplate code and enables greater opportunities for recursive or dynamic UI generation.
 
-So for a registered Input the example UI render function above would look like this.
+So for a registered Input field the example UI render function above would look like this.
 
 ```ts
 
@@ -117,6 +117,9 @@ const renderRootView = (app: FRETS<TodoListProps, TodoListActions>): VNode => {
   ]);
 
 ```
+
+The function takes care of inserting itself into the app and reading it's own values. Validation would still need to happen in the app methods. The addition of the string keyed registry pattern creates opportunities for an app to extend itself at run time, so that the initial state class doesn't need to know about everything up front.
+
 
 ## What and Why?
 

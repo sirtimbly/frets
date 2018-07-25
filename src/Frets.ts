@@ -4,10 +4,10 @@ import * as maquette from "maquette";
 import { ActionsWithFields } from "./ActionsFieldRegistry";
 import { PropsWithFields } from "./PropsFieldRegistry";
 
-export interface IRegisteredField {
+export interface IRegisteredField<T> {
   handler: (evt: Event) => void | boolean;
   validationErrors: string[];
-  value: string;
+  value: T;
 }
 
 /**
@@ -125,12 +125,12 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    * registered yet, it initializes that value on the properties with the value passed in. This makes it so that UI
    * functions can register themselves on the props and the actions without the root app needing to know about it.
    * @param  {string} key
-   * @param  {string} value?
+   * @param  {S} initialValue?
    * @returns IRegisteredField
    */
-  public registerField = (key: string, value?: string): IRegisteredField => {
+  public registerField<S>(key: string, initialValue?: S): IRegisteredField<S> {
     if (!this.modelProps.registeredFieldsValues[key]) {
-      this.modelProps.registeredFieldsValues[key] = value || "";
+      this.modelProps.registeredFieldsValues[key] = initialValue || "";
       this.modelProps.registeredFieldValidationErrors[key] = [];
     }
     if (!this.actions.registeredFieldActions[key]) {
@@ -143,7 +143,7 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
     return this.getField(key);
   }
 
-  public getField = (key: string): IRegisteredField => {
+  public getField<S>(key: string): IRegisteredField<S> {
     return {
       handler: this.actions.registeredFieldActions[key],
       validationErrors: this.modelProps.registeredFieldValidationErrors[key],

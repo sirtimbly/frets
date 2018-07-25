@@ -1,7 +1,7 @@
 
 export class PropsWithFields {
   public registeredFieldsValues: {
-    [key: string]: string;
+    [key: string]: any;
   } = {};
 
   public registeredFieldValidationErrors: {
