@@ -54,11 +54,11 @@
     "node": ">=4.5"
   },
   "devDependencies": {
-    "@types/node": "^8.0.4",
+    "@types/node": "^8.10.21",
     "ava": "^0.21.0",
     "browserify": "^14.1.0",
     "codecov": "^2.2.0",
-    "concurrently": "^3.4.0",
+    "concurrently": "^3.6.0",
     "cpx": "^1.5.0",
     "gh-pages": "^1.0.0",
     "hash.js": "^1.0.3",

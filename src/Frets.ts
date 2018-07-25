@@ -1,12 +1,20 @@
 import { CalculationCache, createProjector, h, Projector, VNode } from "maquette";
 // import IFretsComponent from './IFretsComponent';
 import * as maquette from "maquette";
+import { ActionsWithFields } from "./ActionsFieldRegistry";
+import { PropsWithFields } from "./PropsFieldRegistry";
+
+export interface IRegisteredField {
+  handler: (evt: Event) => void | boolean;
+  validationErrors: string[];
+  value: string;
+}
 
 /**
  * FRETS class is the main way to instantiate a new application and hang your models, actions, and state off it
  * @template T, U
  */
-export class FRETS<T, U> {
+export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
   /**
    * @param  {(e:Event,data:T)=>T} actionFn A function which will be called in an event handler and is expected
    *  to change the state in some way.
@@ -40,8 +48,8 @@ export class FRETS<T, U> {
    * Sets up a render function for the app
    * @param  {(props:T,actions:U)=>VNode} renderFn
    */
-  public registerView = (renderFn: (props: T, actions: U) => VNode) => {
-    this.stateRenderer = () => h(`div#${this.rootId}`, [renderFn(this.modelProps, this.actions)]);
+  public registerView = (renderFn: (app: FRETS<T, U>) => VNode) => {
+    this.stateRenderer = () => h(`div#${this.rootId}`, [renderFn(this)]);
     }
 /**
  * Regisers a function that returns a promise of a VNode - this will be called and the UI
@@ -110,6 +118,29 @@ export class FRETS<T, U> {
         newData = this.calculator(newData, this.modelProps);
         presenterFn(newData);
       };
+    };
+  }
+
+  public registerField = (key: string, value?: string): IRegisteredField => {
+    if (!this.modelProps.registeredFieldsValues[key]) {
+      this.modelProps.registeredFieldsValues[key] = value || "";
+      this.modelProps.registeredFieldValidationErrors[key] = [];
+    }
+    if (!this.actions.registeredFieldActions[key]) {
+      this.actions.registeredFieldActions[key] = this.registerAction((evt: Event, data: T) => {
+        data.registeredFieldsValues[key] = (evt.target as HTMLInputElement).value;
+        return data;
+      });
+    }
+
+    return this.getField(key);
+  }
+
+  public getField = (key: string): IRegisteredField => {
+    return {
+      handler: this.actions.registeredFieldActions[key],
+      validationErrors: this.modelProps.registeredFieldValidationErrors[key],
+      value: this.modelProps.registeredFieldsValues[key],
     };
   }
 

@@ -7,7 +7,7 @@ import {
     IActions,
     IViewCollection,
     Model,
-} from "./index";
+} from "frets";
 
 /**
  * App Class Will set up everything you need and then allow you to initialize the dom

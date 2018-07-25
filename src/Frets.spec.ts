@@ -1,19 +1,21 @@
 import test from "ava";
 import { FRETS, IFretsProps } from "frets";
+import { ActionsWithFields } from "./ActionsFieldRegistry";
+import { PropsWithFields } from "./PropsFieldRegistry";
 
 enum SimpleScreens {
   Start,
   End,
 }
 
-class SimpleProps implements IFretsProps<SimpleScreens> {
+class SimpleProps extends PropsWithFields implements IFretsProps<SimpleScreens>  {
   public messages: string[];
   public screens: SimpleScreens[];
   public activeScreen: SimpleScreens;
 }
 
 // tslint:disable-next-line:max-classes-per-file
-class SimpleActions {
+class SimpleActions extends ActionsWithFields {
   public changeState: (e: Event) => boolean;
 }
 
