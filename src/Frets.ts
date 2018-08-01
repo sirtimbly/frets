@@ -1,6 +1,7 @@
 import { CalculationCache, createProjector, h, Projector, VNode } from "maquette";
 // import IFretsComponent from './IFretsComponent';
 import * as maquette from "maquette";
+import Path from "path-parser";
 import { ActionsWithFields } from "./ActionsFieldRegistry";
 import { PropsWithFields } from "./PropsFieldRegistry";
 
@@ -8,6 +9,13 @@ export interface IRegisteredField<T> {
   handler: (evt: Event) => void | boolean;
   validationErrors: string[];
   value: T;
+}
+
+export interface IRouteRegistry<T> {
+  [key: string]: {
+    calculator: (routeName: string, routeParams: any, props: T) => T;
+    spec: Path;
+  };
 }
 
 /**
@@ -20,6 +28,8 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    *  to change the state in some way.
    */
   public registerAction: (actionFn: (e: Event, data: T) => T) => (e: Event) => any;
+
+  public routes: IRouteRegistry<T> = {};
 
   private projector: Projector;
   // private componentRegistry = new Map<string, IFretsComponent>();
@@ -39,6 +49,9 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
     this.registerAction = this.makeActionStately( function stateUpdater(props: T): void {
       context.render(props);
     }, this.modelProps);
+    window.onpopstate = function(this: Window, evt: Event) {
+      context.render(context.modelProps);
+    };
   }
 
   public stateRenderer: (id?: string) => VNode = (id: string = "default") =>
@@ -75,17 +88,18 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
     };
   }
 
+
+
   /**
    * The Render function is useful for when an async promise resolves (like from a network request) - and you need
    *  to update the props and re-render the app with the new data.
    * @param  {T} props
    */
   public render = (props: T) => {
+
     // console.log("Render: checking the cache");
     this.cache.result([props], () => {
-      props = this.validator(props, this.modelProps);
-      props = this.calculator(props, this.modelProps);
-      this.modelProps = props; // the one and only place where state gets mutated!
+      this.recalculateModelState(props);
       // console.log("Render: props have changed. ", JSON.stringify(this.modelProps));
       this.projector.scheduleRender();
       return props;
@@ -97,7 +111,24 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    * @param  {string} id The id of the dom element to replace
    */
   public mountTo = (id: string) => {
+      // console.log("Mount To");
+      this.recalculateModelState(this.modelProps);
       this.projector.merge(document.getElementById(id), this.stateRenderer);
+  }
+
+  public getRouteLink(key: string, data?: any): string | false {
+    return this.routes[key].spec.build(data || {});
+  }
+
+  public navToRoute(key: string, data?: any) {
+    const r = this.getRouteLink(key, data);
+    if (r) {
+      this.navToPath(r);
+    }
+  }
+
+  public navToPath(path: string) {
+    window.history.pushState({}, null, path);
   }
 
   /**
@@ -113,10 +144,9 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
         // since state has probably changed lets allow async rendering once
         // console.log("event handled: action " + actionFn.name + " event.target = " + (e.target as HTMLElement).id);
         this.allowAsyncRender = true;
-        let newData = actionFn(e, data);
-        newData = this.validator(newData, this.modelProps);
-        newData = this.calculator(newData, this.modelProps);
-        presenterFn(newData);
+        const newData = actionFn(e, data);
+        this.recalculateModelState(newData);
+        presenterFn(this.modelProps);
       };
     };
   }
@@ -150,6 +180,18 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
       value: this.modelProps.registeredFieldsValues[key],
     };
   }
+  /**
+   * Register a new HTML5 mode route see documentation at https://github.com/troch/path-parser
+   * @param  {string} routeName
+   * @param  {string} path
+   * @param  {(routeName:string,routeParams:any,props:T)=>T} fn
+   */
+  public registerRoute(routeName: string, path: string, fn: (routeName: string, routeParams: any, props: T) => T) {
+    this.routes[routeName] = {
+      calculator: fn,
+      spec: new Path(path),
+    };
+  }
 
   // public registerComponent = (name: string, cmp: IFretsComponent) => {
   //   this.componentRegistry.set(name, cmp);
@@ -176,4 +218,27 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    * @param  {T} oldProps
    */
   public calculator: (newProps: T, oldProps: T) => T = (p, o) => p;
+
+  private recalculateModelState(props: T) {
+    let data = Object.assign({}, props);
+    data = this.applyRouteFunction(data);
+    data = this.validator(data, this.modelProps);
+    data = this.calculator(data, this.modelProps);
+    this.modelProps = data;
+  }
+
+  private applyRouteFunction(props: T): T {
+    let data = Object.assign({}, props);
+    for (const key in this.routes) {
+      if (this.routes.hasOwnProperty(key)) {
+        const entry = this.routes[key];
+        const res = entry.spec.test(window.location.pathname);
+        // console.log("Looking for Route", key, res);
+        if (res) {
+          data = entry.calculator(key, res, data);
+          return data; // only apply the first route that matches for now
+        }
+      }
+    }
+  }
 }
