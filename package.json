@@ -56,6 +56,7 @@
   "devDependencies": {
     "@types/node": "^8.10.21",
     "ava": "^0.21.0",
+    "browser-env": "^3.2.5",
     "browserify": "^14.1.0",
     "codecov": "^2.2.0",
     "concurrently": "^3.6.0",
@@ -109,10 +110,13 @@
   },
   "ava": {
     "source": [
-      "test/**/*.js",
-      "build/**/*.js",
+      "test/browser/**/*.js",
+      "build/browser/**/*.js",
       "!build/**/*.spec.js"
-    ]
+    ],
+    "require": [
+			"./config/setup-browser-env.js"
+		]
   },
   "dependencies": {
     "express": "^4.16.3",

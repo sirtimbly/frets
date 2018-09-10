@@ -1,7 +1,5 @@
 import test from "ava";
-import { FRETS, IFretsProps } from "frets";
-import { ActionsWithFields } from "./ActionsFieldRegistry";
-import { PropsWithFields } from "./PropsFieldRegistry";
+import { ActionsWithFields, FRETS, IFretsProps, PropsWithFields } from "frets";
 
 enum SimpleScreens {
   Start,
