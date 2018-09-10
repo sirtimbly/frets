@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.2.8"></a>
+## [0.2.8](https://gitlab.com/FRETS/frets/compare/v0.2.7...v0.2.8) (2018-09-10)
+
+
+
 <a name="0.2.7"></a>
 ## [0.2.7](https://gitlab.com/FRETS/frets/compare/v0.2.6...v0.2.7) (2018-05-14)
 
