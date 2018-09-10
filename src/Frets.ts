@@ -99,7 +99,7 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
 
     // console.log("Render: checking the cache");
     this.cache.result([props], () => {
-      this.recalculateModelState(props);
+      // this.mutate(props);
       // console.log("Render: props have changed. ", JSON.stringify(this.modelProps));
       this.projector.scheduleRender();
       return props;
@@ -112,7 +112,7 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    */
   public mountTo = (id: string) => {
       // console.log("Mount To");
-      this.recalculateModelState(this.modelProps);
+      this.mutate(this.modelProps);
       this.projector.merge(document.getElementById(id), this.stateRenderer);
   }
 
@@ -144,8 +144,9 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
         // since state has probably changed lets allow async rendering once
         // console.log("event handled: action " + actionFn.name + " event.target = " + (e.target as HTMLElement).id);
         this.allowAsyncRender = true;
-        const newData = actionFn(e, data);
-        this.recalculateModelState(newData);
+        const box = Object.assign({}, this.modelProps); // make a new copy of model data
+        const newData = actionFn(e, box);
+        this.mutate(newData);
         presenterFn(this.modelProps);
       };
     };
@@ -209,7 +210,7 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    * @param  {T} newProps
    * @param  {T} oldProps
    */
-  public validator: (newProps: T, oldProps: T) => T = (p, o) => p;
+  public validator: (newProps: T, oldProps: T) => [T, boolean] = (p, o) => [p, true];
 
   /**
    * The primary state calculation method, looks at all the properties and updates any derived values based on changes.
@@ -219,10 +220,15 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    */
   public calculator: (newProps: T, oldProps: T) => T = (p, o) => p;
 
-  private recalculateModelState(props: T) {
+  private mutate(props: T) {
+    let isValid = true;
     let data = Object.assign({}, props);
+    [data, isValid] = this.validator(data, this.modelProps);
+    if (!isValid) {
+      this.modelProps = data;
+      return;
+    }
     data = this.applyRouteFunction(data);
-    data = this.validator(data, this.modelProps);
     data = this.calculator(data, this.modelProps);
     this.modelProps = data;
   }
@@ -240,5 +246,6 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
         }
       }
     }
+    return data; // fall through to default
   }
 }
