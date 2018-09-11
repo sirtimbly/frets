@@ -1,4 +1,4 @@
-import { IActions } from "./index";
+import { IActions } from "frets";
 
 export type IView = (model: any) => void;
 

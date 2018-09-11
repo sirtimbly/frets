@@ -17,13 +17,20 @@ Action() -> Model -> State() -> View() -> {wait for client events that call an A
 Note:
 > In FRETS the part of "Model" will be played by a function called "validate", and the part of "state" will be played by a function call "calculate". Sometimes, the "View" function is called the "Render" function - in case that helps you wrap your mind around things.
 
+## Philosophical Rules
+
+1. Optimize for Developer Ergonomics
+2. No Magic Strings (Unless it is Text Displayed to the User)
+3. No Configuration Objects (Use TS Classes)
+4. Encourage Functional Programming Models
+
 ## Quick Setup
 
 Create a class for your data model properties.
 
 ```ts
 
-export class TodoListProps {
+export class TodoListProps extends PropsWithFields {
   public name: string;
   public email: string;
   public todos: string[];
@@ -38,7 +45,7 @@ export class TodoListProps {
 Create a class for your data mutation actions, but don't implement the function body yet.
 
 ```ts
-export class TodoListActions {
+export class TodoListActions extends ActionsWithFields {
   public saveName: (e: Event) => void;
   // and the rest with this same signature
 }
@@ -55,10 +62,14 @@ F.mountTo("mainapp");
 To create a render view you need a plain function that accepts as parameters: a instance of the model properties and a instance of the actions class.
 
 ```ts
-const renderRootView = (props: TodoListProps, actions: TodoListActions): VNode => {
+const renderRootView = (app: FRETS<TodoListProps, TodoListActions>): VNode => {
   return $$().div.flex.flexColumn.justifyAround.h([
-    $$().h2.h(["hello world"]),
-    $$().button.btn.h(["click me"]),
+    $$().h2.h([`hello ${app.modelProps.name}`]),
+    $$().input.h({
+      onchange: app.actions.saveName,
+      value: app.modelProps.name,
+    }),
+    $$().button.btn.h(["Save"]),
   ]);
 
 
@@ -85,6 +96,30 @@ F.calculator = (newProps: TodoListProps, oldProps: TodoListProps): TodoListProps
 ```
 
 And, that's the short version. You can call `F.mountTo("some_id")` and after a build your app should be fully reactive. I recommend configuring webpack with hot-reloading. It's super helpful. There's no special webpack plugins required for FRETS development - just `tsloader` for typescript support.
+
+## Registry: Simple Form Fields on the State
+
+When you are creating an app in FRETS normally, for every single piece of data you have to create a property on your model class and an updater action on your actions class. This can become tedius when you are simply storing and displaying strings from a form input. To overcome this FRETS now offers a method called `registerField()` which takes a string as it's key. This adds values storage, validation storage, and updater actions to the props and actions inside the FRETS app. These are then accessible through the `getField()` method or directly on the `props.registeredFields` object. The updater action expects to receive a change event with a target of type `HTMLInputElement`. Though this approach sort of breaks "Rule 2: No Magic Strings", it greatly reduces boilerplate code and enables greater opportunities for recursive or dynamic UI generation.
+
+So for a registered Input field the example UI render function above would look like this.
+
+```ts
+
+const renderRootView = (app: FRETS<TodoListProps, TodoListActions>): VNode => {
+  const field = app.registerField("quick_name"); // hold onto the return object
+  return $$().div.flex.flexColumn.justifyAround.h([
+    $$().h2.h([`hello ${field.value}`]),
+    $$().input.h({
+      onchange: field.handler,
+      value: field.value,
+    }),
+    $$().button.btn.h(["Save"]),
+  ]);
+
+```
+
+The function takes care of inserting itself into the app and reading it's own values. Validation would still need to happen in the app methods. The addition of the string keyed registry pattern creates opportunities for an app to extend itself at run time, so that the initial state class doesn't need to know about everything up front.
+
 
 ## What and Why?
 

@@ -1,6 +1,6 @@
 import {
     Model,
-} from "./index";
+} from "frets";
 
 export interface IActions<T> {
     model: Model<T>;

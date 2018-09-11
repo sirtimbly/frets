@@ -1,17 +1,35 @@
 import { CalculationCache, createProjector, h, Projector, VNode } from "maquette";
 // import IFretsComponent from './IFretsComponent';
 import * as maquette from "maquette";
+import Path from "path-parser";
+import { ActionsWithFields } from "./ActionsFieldRegistry";
+import { PropsWithFields } from "./PropsFieldRegistry";
+
+export interface IRegisteredField<T> {
+  handler: (evt: Event) => void | boolean;
+  validationErrors: string[];
+  value: T;
+}
+
+export interface IRouteRegistry<T> {
+  [key: string]: {
+    calculator: (routeName: string, routeParams: any, props: T) => T;
+    spec: Path;
+  };
+}
 
 /**
  * FRETS class is the main way to instantiate a new application and hang your models, actions, and state off it
  * @template T, U
  */
-export class FRETS<T, U> {
+export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
   /**
    * @param  {(e:Event,data:T)=>T} actionFn A function which will be called in an event handler and is expected
    *  to change the state in some way.
    */
   public registerAction: (actionFn: (e: Event, data: T) => T) => (e: Event) => any;
+
+  public routes: IRouteRegistry<T> = {};
 
   private projector: Projector;
   // private componentRegistry = new Map<string, IFretsComponent>();
@@ -31,6 +49,9 @@ export class FRETS<T, U> {
     this.registerAction = this.makeActionStately( function stateUpdater(props: T): void {
       context.render(props);
     }, this.modelProps);
+    window.onpopstate = function(this: Window, evt: Event) {
+      context.render(context.modelProps);
+    };
   }
 
   public stateRenderer: (id?: string) => VNode = (id: string = "default") =>
@@ -40,8 +61,8 @@ export class FRETS<T, U> {
    * Sets up a render function for the app
    * @param  {(props:T,actions:U)=>VNode} renderFn
    */
-  public registerView = (renderFn: (props: T, actions: U) => VNode) => {
-    this.stateRenderer = () => h(`div#${this.rootId}`, [renderFn(this.modelProps, this.actions)]);
+  public registerView = (renderFn: (app: FRETS<T, U>) => VNode) => {
+    this.stateRenderer = () => h(`div#${this.rootId}`, [renderFn(this)]);
     }
 /**
  * Regisers a function that returns a promise of a VNode - this will be called and the UI
@@ -67,17 +88,18 @@ export class FRETS<T, U> {
     };
   }
 
+
+
   /**
    * The Render function is useful for when an async promise resolves (like from a network request) - and you need
    *  to update the props and re-render the app with the new data.
    * @param  {T} props
    */
   public render = (props: T) => {
+
     // console.log("Render: checking the cache");
     this.cache.result([props], () => {
-      props = this.validator(props, this.modelProps);
-      props = this.calculator(props, this.modelProps);
-      this.modelProps = props; // the one and only place where state gets mutated!
+      // this.mutate(props);
       // console.log("Render: props have changed. ", JSON.stringify(this.modelProps));
       this.projector.scheduleRender();
       return props;
@@ -89,7 +111,24 @@ export class FRETS<T, U> {
    * @param  {string} id The id of the dom element to replace
    */
   public mountTo = (id: string) => {
+      // console.log("Mount To");
+      this.mutate(this.modelProps);
       this.projector.merge(document.getElementById(id), this.stateRenderer);
+  }
+
+  public getRouteLink(key: string, data?: any): string | false {
+    return this.routes[key].spec.build(data || {});
+  }
+
+  public navToRoute(key: string, data?: any) {
+    const r = this.getRouteLink(key, data);
+    if (r) {
+      this.navToPath(r);
+    }
+  }
+
+  public navToPath(path: string) {
+    window.history.pushState({}, null, path);
   }
 
   /**
@@ -105,11 +144,53 @@ export class FRETS<T, U> {
         // since state has probably changed lets allow async rendering once
         // console.log("event handled: action " + actionFn.name + " event.target = " + (e.target as HTMLElement).id);
         this.allowAsyncRender = true;
-        let newData = actionFn(e, data);
-        newData = this.validator(newData, this.modelProps);
-        newData = this.calculator(newData, this.modelProps);
-        presenterFn(newData);
+        const box = Object.assign({}, this.modelProps); // make a new copy of model data
+        const newData = actionFn(e, box);
+        this.mutate(newData);
+        presenterFn(this.modelProps);
       };
+    };
+  }
+  /**
+   * Registers simple form fields on the property model, and on the actions to update it. If the field key hasn't been
+   * registered yet, it initializes that value on the properties with the value passed in. This makes it so that UI
+   * functions can register themselves on the props and the actions without the root app needing to know about it.
+   * @param  {string} key
+   * @param  {S} initialValue?
+   * @returns IRegisteredField
+   */
+  public registerField<S>(key: string, initialValue?: S): IRegisteredField<S> {
+    if (!this.modelProps.registeredFieldsValues[key]) {
+      this.modelProps.registeredFieldsValues[key] = initialValue || "";
+      this.modelProps.registeredFieldValidationErrors[key] = [];
+    }
+    if (!this.actions.registeredFieldActions[key]) {
+      this.actions.registeredFieldActions[key] = this.registerAction((evt: Event, data: T) => {
+        data.registeredFieldsValues[key] = (evt.target as HTMLInputElement).value;
+        return data;
+      });
+    }
+
+    return this.getField(key);
+  }
+
+  public getField<S>(key: string): IRegisteredField<S> {
+    return {
+      handler: this.actions.registeredFieldActions[key],
+      validationErrors: this.modelProps.registeredFieldValidationErrors[key],
+      value: this.modelProps.registeredFieldsValues[key],
+    };
+  }
+  /**
+   * Register a new HTML5 mode route see documentation at https://github.com/troch/path-parser
+   * @param  {string} routeName
+   * @param  {string} path
+   * @param  {(routeName:string,routeParams:any,props:T)=>T} fn
+   */
+  public registerRoute(routeName: string, path: string, fn: (routeName: string, routeParams: any, props: T) => T) {
+    this.routes[routeName] = {
+      calculator: fn,
+      spec: new Path(path),
     };
   }
 
@@ -129,7 +210,7 @@ export class FRETS<T, U> {
    * @param  {T} newProps
    * @param  {T} oldProps
    */
-  public validator: (newProps: T, oldProps: T) => T = (p, o) => p;
+  public validator: (newProps: T, oldProps: T) => [T, boolean] = (p, o) => [p, true];
 
   /**
    * The primary state calculation method, looks at all the properties and updates any derived values based on changes.
@@ -138,4 +219,33 @@ export class FRETS<T, U> {
    * @param  {T} oldProps
    */
   public calculator: (newProps: T, oldProps: T) => T = (p, o) => p;
+
+  private mutate(props: T) {
+    let isValid = true;
+    let data = Object.assign({}, props);
+    [data, isValid] = this.validator(data, this.modelProps);
+    if (!isValid) {
+      this.modelProps = data;
+      return;
+    }
+    data = this.applyRouteFunction(data);
+    data = this.calculator(data, this.modelProps);
+    this.modelProps = data;
+  }
+
+  private applyRouteFunction(props: T): T {
+    let data = Object.assign({}, props);
+    for (const key in this.routes) {
+      if (this.routes.hasOwnProperty(key)) {
+        const entry = this.routes[key];
+        const res = entry.spec.test(window.location.pathname);
+        // console.log("Looking for Route", key, res);
+        if (res) {
+          data = entry.calculator(key, res, data);
+          return data; // only apply the first route that matches for now
+        }
+      }
+    }
+    return data; // fall through to default
+  }
 }
