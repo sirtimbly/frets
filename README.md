@@ -9,10 +9,10 @@
 
 Use [the Starter Project](https://github.com/sirtimbly/frets-starter) to get going quickly.
 
-Read the [API docs](https://frets.gitlab.io/frets/docs)
+Read the [API docs](https://sirtimbly.github.io/frets/)
 
 The basic SAM app lifecycle:
-Action() -> Model -> State() -> View() -> {wait for client events that call an Action()}
+Action() -> Model -> State() -> View() -> [wait for client events that call an Action()]
 
 Note:
 > In FRETS the part of "Model" will be played by a function called "validate", and the part of "state" will be played by a function call "calculate". Sometimes, the "View" function is called the "Render" function - in case that helps you wrap your mind around things.

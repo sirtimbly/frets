@@ -115,8 +115,8 @@
       "!build/**/*.spec.js"
     ],
     "require": [
-			"./config/setup-browser-env.js"
-		]
+      "./config/setup-browser-env.js"
+    ]
   },
   "dependencies": {
     "express": "^4.16.3",
