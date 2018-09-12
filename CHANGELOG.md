@@ -2,9 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-<a name="0.2.8"></a>
-## [0.2.8](https://gitlab.com/FRETS/frets/compare/v0.2.7...v0.2.8) (2018-09-12)
+<a name="0.3.0"></a>
+## [0.2.8](https://gitlab.com/FRETS/frets/compare/v0.2.7...v0.3.0) (2018-09-12)
 
+Added more test coverage. Removed the old defunct export objects. This is a breaking change for previous users.
 
 
 <a name="0.2.7"></a>
