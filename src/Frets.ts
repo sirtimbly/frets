@@ -23,7 +23,12 @@ export interface IRouteRegistry<T> {
  * @template T, U
  */
 export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
+
   /**
+   *  Define the concrete implementation of your actions. Your actions must be assigned to event handlers inside
+   *  the VNode definitions of your UI rendering functions. Then the provided action function is executed to
+   *  update some properties in state. Then the app will run data changes through the one mutations method, and
+   *  then it will tell Maquette to schedule a re-rendering of the UI on the next animation frame.
    * @param  {(e:Event,data:T)=>T} actionFn A function which will be called in an event handler and is expected
    *  to change the state in some way.
    */
@@ -37,23 +42,29 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
   private cachedNode: VNode = h("div#default");
   private rootId: string;
   private allowAsyncRender: boolean = true;
+  private stateIsMutated: boolean = false;
 
   /**
    * @param  {T} modelProps A required initial instance of the application Props(Model)
-   * @param  {U} actions A required instance of an actions class (which will be registered later with registerAction)
+   * @param  {U} actions A required instance of an actions class
+   *  (which will be registered later with registerAction `App.actions.X = App.registerAction(fn)`)
    */
   constructor(public modelProps: T, public actions: U) {
     const context = this;
     this.projector = createProjector();
     this.cache = maquette.createCache<T>();
     this.registerAction = this.makeActionStately( function stateUpdater(props: T): void {
-      context.render(props);
+      context.render(props, false);
     }, this.modelProps);
     window.onpopstate = function(this: Window, evt: Event) {
       context.render(context.modelProps);
     };
   }
-
+  /**
+   * The function used to render VNodes for insertion into the page DOM.
+   * This method should be configured by calling FRETS.registerView(...)
+   * @param  {string} id?
+   */
   public stateRenderer: (id?: string) => VNode = (id: string = "default") =>
     h(`div#${id}`, ["Default FRETS: assign a render method using `.registerView()`"])
 
@@ -88,20 +99,21 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
     };
   }
 
-
-
   /**
    * The Render function is useful for when an async promise resolves (like from a network request) - and you need
    *  to update the props and re-render the app with the new data.
    * @param  {T} props
    */
-  public render = (props: T) => {
+  public render = (props: T, recalculate: boolean = true) => {
 
     // console.log("Render: checking the cache");
-    this.cache.result([props], () => {
-      // this.mutate(props);
+    this.cache.result([JSON.stringify(props)], () => {
       // console.log("Render: props have changed. ", JSON.stringify(this.modelProps));
+      if (!this.stateIsMutated || recalculate) {
+        this.mutate(props);
+      }
       this.projector.scheduleRender();
+      this.stateIsMutated = false;
       return props;
     });
   }
@@ -115,25 +127,38 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
       this.mutate(this.modelProps);
       this.projector.merge(document.getElementById(id), this.stateRenderer);
   }
-
+  /**
+   * Returns a path when given the key of a route that was previously registered.
+   * @param  {string} key
+   * @param  {any} data?
+   * @returns string
+   */
   public getRouteLink(key: string, data?: any): string | false {
     return this.routes[key].spec.build(data || {});
   }
-
+  /**
+   * Change the browser location to match the path configured in the route with the
+   * provided key. You still need to call an action to udpate state before the UI will re-render.
+   * @param  {string} key
+   * @param  {any} data?
+   */
   public navToRoute(key: string, data?: any) {
     const r = this.getRouteLink(key, data);
     if (r) {
       this.navToPath(r);
     }
   }
-
+  /**
+   * Update the browser location with the provided raw string path.
+   * @param  {string} path
+   */
   public navToPath(path: string) {
     window.history.pushState({}, null, path);
   }
 
   /**
    * Returns a function that accepts an action function, Wraps the action with our necessary hooks, and returns a
-   * funtion compatible with the standard Maquette event handler signature
+   * funtion compatible with the standard Maquette event handler signature.
    * @param  {(props:T)=>void} presenterFn A reference to the main FRETS render function for this instance.
    * @param  {T} data
    */
@@ -148,6 +173,7 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
         const newData = actionFn(e, box);
         this.mutate(newData);
         presenterFn(this.modelProps);
+
       };
     };
   }
@@ -174,6 +200,13 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
     return this.getField(key);
   }
 
+  /**
+   * Returns the field object that was previously registered with the given key.
+   * Including an event handler that will update the field. Any validation errors on the field,
+   * and whatever the current value is.
+   * @param  {string} key
+   * @returns IRegisteredField
+   */
   public getField<S>(key: string): IRegisteredField<S> {
     return {
       handler: this.actions.registeredFieldActions[key],
@@ -182,7 +215,11 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
     };
   }
   /**
-   * Register a new HTML5 mode route see documentation at https://github.com/troch/path-parser
+   * Register a new route that will execute the given function whenever the provided path
+   *  is matched during the model mutation step. This function should update the app state
+   * properties to reflect the status that is indicated by the given route. The keys are useful for
+   * navigation methods that need to refer to a route programmatically later.
+   * (see path-parser documentation at https://github.com/troch/path-parser).
    * @param  {string} routeName
    * @param  {string} path
    * @param  {(routeName:string,routeParams:any,props:T)=>T} fn
@@ -194,19 +231,14 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
     };
   }
 
-  // public registerComponent = (name: string, cmp: IFretsComponent) => {
-  //   this.componentRegistry.set(name, cmp);
-  //   const definedActions = Object.getOwnPropertyNames(cmp.actions);
-  //   definedActions.map((x: string) => {
-  //     this.registerAction(cmp.actions[x]);
-  //   });
-  // }
-
   // the following methods should be overwritten by the Dev during setup, but its ok to work with these defaults
 
   /**
    * Check for any properties that are invalid or out of bounds and either reset them or add validation/warning messages
-   *  somewhere on the props for display. Please make this function idempotent.
+   *  somewhere on the props for display. Please make this function idempotent. Overwrite this with your own specifc
+   *  implementation. It can return an updated state object containing validation error messages as well as returning
+   *  false in the tuple to make mutation stop early and show errors to the user. The calculate method and route methods
+   * will not be called when your validate method returns false in the second parameter of the return tuple.
    * @param  {T} newProps
    * @param  {T} oldProps
    */
@@ -214,15 +246,21 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
 
   /**
    * The primary state calculation method, looks at all the properties and updates any derived values based on changes.
-   * Please make this function idempotent.
+   * Please make this function idempotent. Overwrite this with your own specific implementation.
    * @param  {T} newProps
    * @param  {T} oldProps
    */
   public calculator: (newProps: T, oldProps: T) => T = (p, o) => p;
 
+  /**
+   * The one and only place that this application model state is updated, first it runs the validation method,
+   * then it runs any route functions, and finally runs the real state calculation method.
+   * @param  {T} props
+   */
   private mutate(props: T) {
     let isValid = true;
     let data = Object.assign({}, props);
+    this.stateIsMutated = true;
     [data, isValid] = this.validator(data, this.modelProps);
     if (!isValid) {
       this.modelProps = data;
@@ -232,7 +270,12 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
     data = this.calculator(data, this.modelProps);
     this.modelProps = data;
   }
-
+  /**
+   * Checks to see if any of the registerd routes are matched and then updates the app state using
+   * the provided transformation function.
+   * @param  {T} props
+   * @returns T
+   */
   private applyRouteFunction(props: T): T {
     let data = Object.assign({}, props);
     for (const key in this.routes) {

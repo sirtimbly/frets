@@ -63,6 +63,7 @@
     "cpx": "^1.5.0",
     "gh-pages": "^1.0.0",
     "hash.js": "^1.0.3",
+    "maquette-query": "^0.11.7",
     "mkdirp": "^0.5.1",
     "npm-scripts-info": "^0.3.6",
     "nyc": "^11.0.3",
