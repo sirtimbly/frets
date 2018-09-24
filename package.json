@@ -14,7 +14,7 @@
     "build": "trash build && yarn build:main && yarn build:module && yarn build:browser-deps && yarn build:browser && yarn build:browser-cjs",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p config/exports/tsconfig.module.json",
-    "build:browser-deps": "mkdirp build/temp && browserify node_modules/hash.js/lib/hash.js --standalone hash -o build/temp/hash.js",
+    "build:browser-deps": "mkdirp build/temp",
     "build:browser": "rollup -c config/exports/rollup.config.js -f es -o build/browser/index.js",
     "build:browser-cjs": "rollup -c config/exports/rollup.config.js -f cjs -o build/browser/index.cjs.js",
     "build:resolve-sourcemaps": "sorcery -i build/browser/index.js && sorcery -i build/browser/index.cjs.js",
@@ -57,12 +57,10 @@
     "@types/node": "^8.10.21",
     "ava": "^0.21.0",
     "browser-env": "^3.2.5",
-    "browserify": "^14.1.0",
     "codecov": "^2.2.0",
     "concurrently": "^3.6.0",
     "cpx": "^1.5.0",
     "gh-pages": "^1.0.0",
-    "hash.js": "^1.0.3",
     "maquette-query": "^0.11.7",
     "mkdirp": "^0.5.1",
     "npm-scripts-info": "^0.3.6",
@@ -120,9 +118,8 @@
     ]
   },
   "dependencies": {
-    "express": "^4.16.3",
-    "maquette": "^3.2.2",
+    "maquette": "^3.3.1",
     "path-parser": "^4.2.0",
-    "tslib": "^1.9.0"
+    "tslib": "^1.9.3"
   }
 }

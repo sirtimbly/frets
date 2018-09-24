@@ -1,9 +1,9 @@
-import { CalculationCache, createProjector, h, Projector, VNode } from "maquette";
-// import IFretsComponent from './IFretsComponent';
-import * as maquette from "maquette";
+import { CalculationCache, createCache, createProjector, h, Projector, VNode } from "maquette";
+
 import Path from "path-parser";
 import { ActionsWithFields } from "./ActionsFieldRegistry";
 import { PropsWithFields } from "./PropsFieldRegistry";
+import { TAO, taople } from "./tao";
 
 export interface IRegisteredField<T> {
   handler: (evt: Event) => void | boolean;
@@ -22,7 +22,7 @@ export interface IRouteRegistry<T> {
  * FRETS class is the main way to instantiate a new application and hang your models, actions, and state off it
  * @template T, U
  */
-export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
+export class FRETS<T extends PropsWithFields, U extends ActionsWithFields, V extends taople = {}> {
 
   /**
    *  Define the concrete implementation of your actions. Your actions must be assigned to event handlers inside
@@ -52,7 +52,7 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
   constructor(public modelProps: T, public actions: U) {
     const context = this;
     this.projector = createProjector();
-    this.cache = maquette.createCache<T>();
+    this.cache = createCache<T>();
     this.registerAction = this.makeActionStately( function stateUpdater(props: T): void {
       context.render(props, false);
     }, this.modelProps);
@@ -60,6 +60,8 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
       context.render(context.modelProps);
     };
   }
+
+  public tao: TAO<V> = new TAO<V>();
   /**
    * The function used to render VNodes for insertion into the page DOM.
    * This method should be configured by calling FRETS.registerView(...)

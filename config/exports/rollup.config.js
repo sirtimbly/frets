@@ -4,9 +4,7 @@ import nodeResolve from 'rollup-plugin-node-resolve';
 import alias from 'rollup-plugin-alias';
 
 const substituteModulePaths = {
-    'crypto': 'build/module/adapters/crypto.browser.js',
     'maquette': 'node_modules/maquette/dist/index.js',
-    'hash.js': 'build/temp/hash.js'
 }
 
 export default {
