@@ -34,6 +34,8 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields, V ext
    */
   public registerAction: (actionFn: (e: Event, data: T) => T) => (e: Event) => any;
 
+  public tao: TAO<V, T>;
+
   public routes: IRouteRegistry<T> = {};
 
   private projector: Projector;
@@ -59,9 +61,10 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields, V ext
     window.onpopstate = function(this: Window, evt: Event) {
       context.render(context.modelProps);
     };
+    this.tao = new TAO<V, T>(this.modelProps, this.render);
   }
 
-  public tao: TAO<V> = new TAO<V>();
+
   /**
    * The function used to render VNodes for insertion into the page DOM.
    * This method should be configured by calling FRETS.registerView(...)
@@ -263,7 +266,9 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields, V ext
     let isValid = true;
     let data = Object.assign({}, props);
     this.stateIsMutated = true;
-    [data, isValid] = this.validator(data, this.modelProps);
+    if (this.validator) {
+      [data, isValid] = this.validator(data, this.modelProps);
+    }
     if (!isValid) {
       this.modelProps = data;
       return;

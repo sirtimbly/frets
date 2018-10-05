@@ -1,5 +1,5 @@
 import test from "ava";
-import { ActionsWithFields, FRETS, IFretsProps, PropsWithFields } from "frets";
+import { ActionsWithFields, FRETS, IFretsProps, PropsWithFields, Context } from "frets";
 import { h, VNode } from "maquette";
 import { createTestProjector } from "maquette-query";
 
@@ -103,3 +103,28 @@ test("registers and updates a field", (t) => {
   proj.initialize(F.stateRenderer);
   t.is(proj.query(".output").textContent, "2");
 });
+
+test("updates when using TAO methods", (t) => {
+  const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
+  F.tao.addHandler({t: "Message", a: "Load", o: "Client"}, (tao, data, state): false => {
+    state.messages = [data["Message"]];
+    return false;
+  })
+  F.registerView((app: main): VNode => {
+    return h("div", [
+      h("button", { onclick: (ev) => {
+        app.tao.propose({t: "Message", a: "Load", o: "Client"}, {Message: "test"});
+      } }, ["Load Messages"]),
+      h("ul", app.modelProps.messages.map((x) => h("li", [x.toString()]))),
+    ]);
+  });
+  const proj = createTestProjector(F.stateRenderer);
+  const list = proj.query("ul");
+  t.falsy(list.children.length);
+  const button = proj.query("button");
+  t.truthy(button.exists);
+  button.simulate.click();
+  t.truthy(list.children.length);
+  t.falsy(list.children[0].children);
+  t.is(list.children[0].text, "test");
+})
