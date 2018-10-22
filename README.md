@@ -15,6 +15,7 @@ The basic SAM app lifecycle:
 Action() -> Model -> State() -> View() -> [wait for client events that call an Action()]
 
 Note:
+> I based this project on what I read on [sam.js.org](https://sam.js.org) but I modified it slightly.
 > In FRETS the part of "Model" will be played by a function called "validate", and the part of "state" will be played by a function call "calculate". Sometimes, the "View" function is called the "Render" function - in case that helps you wrap your mind around things.
 
 ## Philosophical Rules
@@ -133,11 +134,25 @@ In SAM every piece of your UI should be a pure function that generates a new DOM
 
 I originally was playing around with [Mithril](https://mithril.js.org/) and attempting to integrate it as a VirtualDom rendering implementation of the SAM pattern. But Mithril was not very TypeScript friendly, and a little searching revealed [Maquette](https://maquettejs.org/), a smaller and lighter TypeScript implementation of the hyperscript rendering interface that Mithril (and react) give us. It might even be more performant, depending on how you measure. It's not perfect, but it is under active development and I think the value of a solidly implemented hyperscript rendering library, decoupled from the big projects, that we can build upon is of significant value.
 
-Why no JSX? Why no templating? ... This is an experiment, and in the past I have always been a believer in working with real HTML. I thougt staying close to the final implementation language was the smartest way proceed compared to things like ASP.Net WebForms or HAML. Every developer is familiar with HTML which is why Vue and JSX are so easy to learn, they have a declarative syntax that looks mostly just like HTML. But I wondered, can I avoid some of the pain of the syntactic restrictions of HTML? (let's be honest, it is _super_ verbose and repetetive). In the Mithril hyper script code I saw [DOM rendering functions let you specify a CSS selector string](https://mithril.js.org/hyperscript.html#css-selectors) — think of how you use the [Emmet](https://emmet.io/) tool in your IDE to generate HTML. These methods take that selector string and an attributes object to generate an html element with all the appropriate class names, attributes, etc. I like it. It's weird but it works. Read more about this in the section [Functional Rendering with TypeScript Helper Classes](#functional-rendering-with-typescript-helper-classes).
+Why no JSX? Why no templating? ... This is an experiment, and in the past I have always been a believer in working with real HTML. I thougt staying close to the final implementation language was the smartest way proceed compared to things like ASP.Net WebForms or HAML. Every developer is familiar with HTML which is why Vue and JSX are so easy to learn, they have a declarative syntax that looks mostly just like HTML. But I wondered, can I avoid some of the pain of the syntactic restrictions of HTML? (let's be honest, it is _super_ verbose and repetetive). In the Mithril hyper script code I saw [DOM rendering functions let you specify a CSS selector string](https://mithril.js.org/hyperscript.html#css-selectors) — think of how you use the [Emmet](https://emmet.io/) tool in your IDE to generate HTML.
 
-What data does your view function render? Well, it's just a plain old JavaScript object, or preferable a generic subset of that object if you've refactored your UI into smaller decoupled functions. Of course, since this is TypeScript our IDE will know that we've already specified the shape and types of the properties on that object, so we get code completion and type warnings everywhere we work with it reducing errors and making it easier to reason about your higher level code when you're down in the rendering functions. Ideally you will have one big parent Class object for your entire application state making it easy to know what you're passing around and looking for.
+```js
+  h("div.customHeader.someClass", [...childNodes]);
+```
 
-In Samwise you keep all your high level view functions that accept that global state data object in one class to make refactoring easy and painless.
+These methods take that selector string and an attributes object to generate an html element with all the appropriate class names, attributes, etc. I like it. It's weird but it works. Especially if you use a functional CSS library like BaseCSS or Tachyons. Read more about this in the section [Functional Rendering with TypeScript Helper Classes](#functional-rendering-with-typescript-helper-classes).
+
+```ts
+  $.div.p2.m1.border.rounded.h([..childNodes]);
+```
+
+So, you could be building a web app without writing any new HTML or CSS code. 😳 🤯
+
+## To Boil It Down, The Job of an SPA is to Render Data in Response to Events
+
+What data does your view function render? Well, it's just a plain old JavaScript object, or preferably a generic subset of that object if you've refactored your UI into smaller decoupled functions. Of course, since this is TypeScript our IDE will know that we've already specified the shape and types of the properties on that object, so we get code completion and type warnings everywhere we work. The development time tools like VS Code and TSLint reduce errors and make it easier to reason about your higher level code when you're deep down in the rendering functions. Ideally you will have one big parent strongly-typed class object for your entire application state making it easy to know what you're passing around and looking for. FRETS doesn't make any affordances for keeping your object immutable. That's up to you.
+
+In FRETS there is no particular recommendation for how to organize and break up the code for your rendering functions. One function per file or many, it all works - but breaking into multiple files gives you the chance to do async chunk loading through webpack to cut down on initial payload size.
 
 ## State
 
@@ -145,7 +160,7 @@ State is a simple class that is responsible for calling those "View" render meth
 
 ## Model
 
-The state was called by a function on your Model class called "present". Generally there is one *Present()* function on a model, and it is tied to the one *Render()* function on you State class. This present function first executes any data validation logic that the model was configured with when we gave it a *validate()* function at instatiation. So the Model handles consistency, and this is also where you would specify data synchronization logic for communicating with a remote API.
+The state was called by a function on your Model class called "present". Generally there is one *`Present()`* function on a model, and it is tied to the one *`Render()`* function on you State class. This present function first executes any data validation logic that the model was configured with when we gave it a *`validate()`* function at instatiation. So the Model handles consistency, and this is also where you would specify data synchronization logic for communicating with a remote API.
 
 ## Action
 
