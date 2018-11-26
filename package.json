@@ -54,6 +54,7 @@
     "node": ">=4.5"
   },
   "devDependencies": {
+    "@types/browserify": "^12.0.36",
     "@types/node": "^8.10.21",
     "ava": "^0.25.0",
     "browser-env": "^3.2.5",
@@ -120,9 +121,8 @@
     ]
   },
   "dependencies": {
-    "express": "^4.16.3",
-    "maquette": "^3.2.2",
-    "path-parser": "^4.2.0",
-    "tslib": "^1.9.0"
+    "maquette": "3.3.2",
+    "path-parser": "4.2.0",
+    "tslib": "1.9.3"
   }
 }
