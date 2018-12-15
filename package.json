@@ -11,10 +11,9 @@
   "license": "MIT",
   "scripts": {
     "info": "npm-scripts-info",
-    "build": "trash build && npm run build:main && npm run build:module && npm run build:browser-deps && npm run build:browser && npm run build:browser-cjs && npm run build:browser-min",
+    "build": "trash build && npm run build:main && npm run build:module && npm run build:browser && npm run build:browser-cjs && npm run build:browser-min",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p config/exports/tsconfig.module.json",
-    "build:browser-deps": "mkdirp build/temp && browserify node_modules/hash.js/lib/hash.js --standalone hash -o build/temp/hash.js",
     "build:browser": "rollup -c config/exports/rollup.config.js -f es -o build/browser/frets.js",
     "build:browser-min": "rollup -c config/exports/rollup_min.config.js -f umd -o build/browser/frets.min.js",
     "build:browser-cjs": "rollup -c config/exports/rollup.config.js -f cjs -o build/browser/frets.cjs.js",
@@ -55,16 +54,13 @@
     "node": ">=4.5"
   },
   "devDependencies": {
-    "@types/browserify": "^12.0.36",
     "@types/node": "^8.10.21",
     "ava": "^0.25.0",
     "browser-env": "^3.2.5",
-    "browserify": "^14.1.0",
     "codecov": "^3.1.0",
     "concurrently": "^3.6.0",
     "cpx": "^1.5.0",
     "gh-pages": "^2.0.1",
-    "hash.js": "^1.0.3",
     "maquette-query": "^0.11.7",
     "mkdirp": "^0.5.1",
     "npm-scripts-info": "^0.3.6",
@@ -75,15 +71,14 @@
     "rollup-plugin-commonjs": "^8.0.2",
     "rollup-plugin-node-resolve": "^3.0.0",
     "rollup-plugin-terser": "^3.0.0",
-    "rollup-watch": "^4.0.0",
     "sleep-ms": "^2.0.1",
     "sorcery": "^0.10.0",
     "standard-version": "^4.4.0",
     "trash-cli": "^1.4.0",
     "tslint": "^5.11.0",
-    "tslint-config-standard": "^6.0.1",
+    "tslint-config-standard": "^8.0.1",
     "typedoc": "^0.13.0",
-    "typescript": "^3.0.1"
+    "typescript": "^3.2.2"
   },
   "keywords": [
     "framework",
