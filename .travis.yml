@@ -1,8 +1,15 @@
 sudo: false
-language: node
-
+language: node_js
 script:
-  - npm test
-
+- npm test
 after_success:
-  - npm run send-coverage
+- npm run send-coverage
+- npm run docs:publish
+deploy:
+  provider: npm
+  email: sirtimbly@gmail.com
+  api_key:
+    secure: sifeDZ0u4plucjxlpIdgZPQzDZmIdc5w6sHpidLNyAuVTR+2DABd4hZJ7R75Xm6l//8jpJRWw9W91F4yGgWp/C2JWLhAsHcG9heUQJ29mSFFwy1JUG/m2nzvYzOJFMmOQCUG5xqpLUbnRDGLdHoWdqyD4VXX8E2I25bT5Z9oujSkYGqn+7aLGZ3MFgSiEOh4J4XjV7TI11yrZN9U+LvrxZW9zBOJGrgVOLfQRArE/KRRJJnXsjmtVi4KU+jQu7nYwJWc53I16ZeO9CmlOVn+jkhyaWN+tUatF+R0xfwDUkzcftlnLcI7yRIWj7rXsoN6DNMNGr/xRHDE6VND+bVjfa4yttc/U7dUMVfWGlNYorCct9C2y64gJILoBzZ4pey9EbxAJz/pt2zHGItKn0PuyEJejaCwbz8LbvmiDhWmP0DbD8Mar0L1VIXVEHsUU5rwScz5decU0eKFEZXIKaEGqqD8vujXHQEG5Tc00HaMNBtlVqFRsEnLnf4qFgUk/OGs7js5CRV7dFPJ2uzStPBkSHe8I0DPqBpt4W2/OMyt2hE8/5KOLDpMW2wFOjgZsXBPHaZkR3kMR1ARWjQP9dbfadZq/XRqZlKvIEVKIE+x6fo8wUzyCbQvO/wgluCtjfjHFI+uW2FKeR+WwCU7r3+SJD/bZ7vCP5X+mJbfMRFEI0s=
+  on:
+    tags: true
+    repo: sirtimbly/frets
