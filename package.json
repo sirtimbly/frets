@@ -26,7 +26,7 @@
     "watch": "yarn build && yarn build:tests -- --no-browser && concurrently -r --kill-others 'npm run --silent build:main -- -w' 'npm run --silent build:tests -- -w --no-browser' 'sleepms 2000 && ava --watch'",
     "cov": "yarn unit && yarn html-coverage && opn coverage/index.html",
     "html-coverage": "nyc report --reporter=html",
-    "send-coverage": "nyc report --reporter=lcov > coverage.lcov && codecov",
+    "send-coverage": "nyc report --reporter=lcov > coverage.lcov && codecov -t $CODECOV_TOKEN",
     "docs": "yarn docs:html && opn public/docs/index.html",
     "docs:html": "typedoc src/index.ts --excludePrivate --mode file --theme minimal --out public/docs",
     "docs:json": "typedoc --mode file --json public/docs/typedoc.json src/index.ts",
@@ -84,30 +84,24 @@
     "typescript": "^3.0.1"
   },
   "keywords": [
-    "async",
-    "ava",
-    "await",
-    "boilerplate",
-    "conventional-changelog",
-    "ES6",
-    "ES7",
+    "framework",
+    "web",
+    "functional",
+    "state",
+    "action",
+    "model",
+    "hyperscript",
+    "virtual-dom",
+    "sam",
     "library",
     "javascript-modules",
-    "node",
-    "nyc",
-    "rollup",
-    "starter",
-    "template",
-    "tree-shaking",
-    "tslint",
-    "typedoc",
-    "typescript",
-    "typings"
+    "typescript"
   ],
   "nyc": {
     "exclude": [
       "**/*.spec.js",
-      "build/browser/**"
+      "build/browser/**",
+      "config/**"
     ]
   },
   "ava": {

@@ -1,5 +1,14 @@
 # FRETS (Functional, Reactive, entirely TypeScript)
 ## An Ultralight Composable Frontend TypeScript Web Framework
+<p style="text-align: center">
+  <a href="https://david-dm.org/sirtimbly/frets">
+    <img id="" src="https://david-dm.org/sirtimby/frets.svg" alt="badge" class="">
+  </a>
+  <a href="https://packagephobia.now.sh/result?p=frets">
+    <img id="" src="https://packagephobia.now.sh/badge?p=frets" alt="install size" class="">
+  </a>
+
+</p>
 
 ![FRETS logo](http://uploads.timbendt.com.s3.amazonaws.com/dropzone/fretslogo4@1x.png)
 

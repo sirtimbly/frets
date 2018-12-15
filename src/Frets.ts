@@ -1,5 +1,4 @@
 import { CalculationCache, createProjector, h, Projector, VNode } from "maquette";
-// import IFretsComponent from './IFretsComponent';
 import * as maquette from "maquette";
 import Path from "path-parser";
 import { ActionsWithFields } from "./ActionsFieldRegistry";
@@ -37,7 +36,6 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
   public routes: IRouteRegistry<T> = {};
 
   private projector: Projector;
-  // private componentRegistry = new Map<string, IFretsComponent>();
   private cache: CalculationCache<T>;
   private cachedNode: VNode = h("div#default");
   private rootId: string;
@@ -73,7 +71,7 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    * @param  {(props:T,actions:U)=>VNode} renderFn
    */
   public registerView = (renderFn: (app: FRETS<T, U>) => VNode) => {
-    this.stateRenderer = () => h(`div#${this.rootId}`, [renderFn(this)]);
+      this.stateRenderer = () => h(`div#${this.rootId}`, [renderFn(this)]);
     }
 /**
  * Regisers a function that returns a promise of a VNode - this will be called and the UI
@@ -86,15 +84,14 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
       // console.log("Async state render function executing. allow async render: " + this.allowAsyncRender);
       if (this.allowAsyncRender) {
         renderFn(this.modelProps, this.actions).then((n: VNode) => {
-            // at this point the lazy loading should be complete so let's invalidate the cache and render again once
-            this.cache.invalidate();
-            this.allowAsyncRender = false;
-
-            // console.log("loaded view code, scheduling render with new VNode");
-            this.cachedNode = n;
-            this.render(this.modelProps);
-          });
-        }
+          // at this point the lazy loading should be complete so let's invalidate the cache and render again once
+          this.cache.invalidate();
+          this.allowAsyncRender = false;
+          // console.log("loaded view code, scheduling render with new VNode");
+          this.cachedNode = n;
+          this.render(this.modelProps);
+        });
+      }
       return h(`div#${this.rootId}`, [this.cachedNode]);
     };
   }
@@ -105,7 +102,6 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    * @param  {T} props
    */
   public render = (props: T, recalculate: boolean = true) => {
-
     // console.log("Render: checking the cache");
     this.cache.result([JSON.stringify(props)], () => {
       // console.log("Render: props have changed. ", JSON.stringify(this.modelProps));
@@ -123,14 +119,14 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    * @param  {string} id The id of the dom element to replace
    */
   public mountTo = (id: string) => {
-      // console.log("Mount To");
-      this.mutate(this.modelProps);
-      this.projector.merge(document.getElementById(id), this.stateRenderer);
+    // console.log("Mount To");
+    this.mutate(this.modelProps);
+    this.projector.merge(document.getElementById(id), this.stateRenderer);
   }
   /**
    * Returns a path when given the key of a route that was previously registered.
    * @param  {string} key
-   * @param  {any} data?
+   * @param  {any} data? A route data object
    * @returns string
    */
   public getRouteLink(key: string, data?: any): string | false {
@@ -173,7 +169,6 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
         const newData = actionFn(e, box);
         this.mutate(newData);
         presenterFn(this.modelProps);
-
       };
     };
   }
