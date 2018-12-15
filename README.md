@@ -1,14 +1,23 @@
 # FRETS (Functional, Reactive, entirely TypeScript)
 ## An Ultralight Composable Frontend TypeScript Web Framework
 <p style="text-align: center">
+<a href="https://www.npmjs.com/package/frets"><img src="https://badge.fury.io/js/frets.svg" alt="npm version" height="20"></a>
   <a href="https://david-dm.org/sirtimbly/frets">
-    <img id="" src="https://david-dm.org/sirtimby/frets.svg" alt="badge" class="">
+    <img src="https://david-dm.org/sirtimbly/frets/status.svg" alt="dependencies status">
+  </a>
+  <a href="https://codecov.io/gh/sirtimbly/frets">
+    <img src="https://codecov.io/gh/sirtimbly/frets/branch/master/graph/badge.svg" />
+  </a>
+  <a href="https://raw.githubusercontent.com/sirtimbly/frets/master/build/browser/frets.min.js">
+    <img src="https://img.badgesize.io/sirtimbly/frets/master/build/browser/frets.min.js.svg?compression=gzip&label=minzipped&max=9000&softmax=7000]
+">
   </a>
   <a href="https://packagephobia.now.sh/result?p=frets">
     <img id="" src="https://packagephobia.now.sh/badge?p=frets" alt="install size" class="">
   </a>
-  <img src="https://img.badgesize.io/sirtimbly/frets/master/build/browser/frets.min.js.svg?compression=gzip&label=minzipped&max=string&softmax=string]
+  <img src="https://img.badgesize.io/sirtimbly/frets/master/build/browser/frets.min.js.svg?compression=gzip&label=minzipped&max=9000&softmax=7000]
 ">
+  <a href="https://app.fossa.io/projects/git%2Bgithub.com%2Fsirtimbly%2Ffrets?ref=badge_small" alt="FOSSA Status"><img src="https://app.fossa.io/api/projects/git%2Bgithub.com%2Fsirtimbly%2Ffrets.svg?type=small"/></a>
 </p>
 
 ![FRETS logo](http://uploads.timbendt.com.s3.amazonaws.com/dropzone/fretslogo4@1x.png)
