@@ -6,16 +6,13 @@
         //"sourceMap": true,
         "noImplicitAny": false,
         "skipLibCheck": true,
-        "module": "commonjs",
+        "module": "esnext",
         "moduleResolution": "node",
-        "target": "es5",
+        "target": "es6",
         "lib": [
             "es6",
             "dom"
         ],
-        "types" : [
-            "node"
-          ],
         "experimentalDecorators": true,
         "allowSyntheticDefaultImports": false,
         "baseUrl": ".", // required for "paths",

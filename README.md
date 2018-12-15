@@ -7,7 +7,7 @@
   <a href="https://packagephobia.now.sh/result?p=frets">
     <img id="" src="https://packagephobia.now.sh/badge?p=frets" alt="install size" class="">
   </a>
-  <img src="https://img.badgesize.io/sirtimbly/frets/master/build/browser/index.js.svg?compression=gzip&label=gzip][&max=string][&softmax=string]
+  <img src="https://img.badgesize.io/sirtimbly/frets/master/build/browser/frets.min.js.svg?compression=gzip&label=minzipped&max=string&softmax=string]
 ">
 </p>
 

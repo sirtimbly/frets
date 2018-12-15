@@ -1331,45 +1331,17 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __generator = (undefined && undefined.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
 /**
  * FRETS class is the main way to instantiate a new application and hang your models, actions, and state off it
  * @template T, U
  */
-var FRETS = /** @class */ (function () {
+class FRETS {
     /**
      * @param  {T} modelProps A required initial instance of the application Props(Model)
      * @param  {U} actions A required instance of an actions class
      *  (which will be registered later with registerAction `App.actions.X = App.registerAction(fn)`)
      */
-    function FRETS(modelProps, actions) {
-        var _this = this;
+    constructor(modelProps, actions) {
         this.modelProps = modelProps;
         this.actions = actions;
         this.routes = {};
@@ -1381,16 +1353,13 @@ var FRETS = /** @class */ (function () {
          * This method should be configured by calling FRETS.registerView(...)
          * @param  {string} id?
          */
-        this.stateRenderer = function (id) {
-            if (id === void 0) { id = "default"; }
-            return h("div#" + id, ["Default FRETS: assign a render method using `.registerView()`"]);
-        };
+        this.stateRenderer = (id = "default") => h(`div#${id}`, ["Default FRETS: assign a render method using `.registerView()`"]);
         /**
          * Sets up a render function for the app
          * @param  {(props:T,actions:U)=>VNode} renderFn
          */
-        this.registerView = function (renderFn) {
-            _this.stateRenderer = function () { return h("div#" + _this.rootId, [renderFn(_this)]); };
+        this.registerView = (renderFn) => {
+            this.stateRenderer = () => h(`div#${this.rootId}`, [renderFn(this)]);
         };
         /**
          * Regisers a function that returns a promise of a VNode - this will be called and the UI
@@ -1398,41 +1367,36 @@ var FRETS = /** @class */ (function () {
          * of UI modules that aren't needed right away.
          * @param  {(props:T,actions:U)=>Promise<VNode>} renderFn
          */
-        this.registerViewAsync = function (renderFn) { return __awaiter(_this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                this.stateRenderer = function () {
-                    // console.log("Async state render function executing. allow async render: " + this.allowAsyncRender);
-                    if (_this.allowAsyncRender) {
-                        renderFn(_this.modelProps, _this.actions).then(function (n) {
-                            // at this point the lazy loading should be complete so let's invalidate the cache and render again once
-                            _this.cache.invalidate();
-                            _this.allowAsyncRender = false;
-                            // console.log("loaded view code, scheduling render with new VNode");
-                            _this.cachedNode = n;
-                            _this.render(_this.modelProps);
-                        });
-                    }
-                    return h("div#" + _this.rootId, [_this.cachedNode]);
-                };
-                return [2 /*return*/];
-            });
-        }); };
+        this.registerViewAsync = (renderFn) => __awaiter(this, void 0, void 0, function* () {
+            this.stateRenderer = () => {
+                // console.log("Async state render function executing. allow async render: " + this.allowAsyncRender);
+                if (this.allowAsyncRender) {
+                    renderFn(this.modelProps, this.actions).then((n) => {
+                        // at this point the lazy loading should be complete so let's invalidate the cache and render again once
+                        this.cache.invalidate();
+                        this.allowAsyncRender = false;
+                        // console.log("loaded view code, scheduling render with new VNode");
+                        this.cachedNode = n;
+                        this.render(this.modelProps);
+                    });
+                }
+                return h(`div#${this.rootId}`, [this.cachedNode]);
+            };
+        });
         /**
          * The Render function is useful for when an async promise resolves (like from a network request) - and you need
          *  to update the props and re-render the app with the new data.
          * @param  {T} props
          */
-        this.render = function (props, recalculate) {
-            if (recalculate === void 0) { recalculate = true; }
+        this.render = (props, recalculate = true) => {
             // console.log("Render: checking the cache");
-            _this.cache.result([JSON.stringify(props)], function () {
+            this.cache.result([JSON.stringify(props)], () => {
                 // console.log("Render: props have changed. ", JSON.stringify(this.modelProps));
-                if (!_this.stateIsMutated || recalculate) {
-                    _this.mutate(props);
+                if (!this.stateIsMutated || recalculate) {
+                    this.mutate(props);
                 }
-                _this.projector.scheduleRender();
-                _this.stateIsMutated = false;
+                this.projector.scheduleRender();
+                this.stateIsMutated = false;
                 return props;
             });
         };
@@ -1440,10 +1404,10 @@ var FRETS = /** @class */ (function () {
          * Mount the application to the DOM.
          * @param  {string} id The id of the dom element to replace
          */
-        this.mountTo = function (id) {
+        this.mountTo = (id) => {
             // console.log("Mount To");
-            _this.mutate(_this.modelProps);
-            _this.projector.merge(document.getElementById(id), _this.stateRenderer);
+            this.mutate(this.modelProps);
+            this.projector.merge(document.getElementById(id), this.stateRenderer);
         };
         /**
          * Returns a function that accepts an action function, Wraps the action with our necessary hooks, and returns a
@@ -1451,17 +1415,17 @@ var FRETS = /** @class */ (function () {
          * @param  {(props:T)=>void} presenterFn A reference to the main FRETS render function for this instance.
          * @param  {T} data
          */
-        this.makeActionStately = function (presenterFn, data) {
+        this.makeActionStately = (presenterFn, data) => {
             // this function will return functions that can be used as actions in a view
-            return function (actionFn) {
-                return function (e) {
+            return (actionFn) => {
+                return (e) => {
                     // since state has probably changed lets allow async rendering once
                     // console.log("event handled: action " + actionFn.name + " event.target = " + (e.target as HTMLElement).id);
-                    _this.allowAsyncRender = true;
-                    var box = Object.assign({}, _this.modelProps); // make a new copy of model data
-                    var newData = actionFn(e, box);
-                    _this.mutate(newData);
-                    presenterFn(_this.modelProps);
+                    this.allowAsyncRender = true;
+                    const box = Object.assign({}, this.modelProps); // make a new copy of model data
+                    const newData = actionFn(e, box);
+                    this.mutate(newData);
+                    presenterFn(this.modelProps);
                 };
             };
         };
@@ -1475,15 +1439,15 @@ var FRETS = /** @class */ (function () {
          * @param  {T} newProps
          * @param  {T} oldProps
          */
-        this.validator = function (p, o) { return [p, true]; };
+        this.validator = (p, o) => [p, true];
         /**
          * The primary state calculation method, looks at all the properties and updates any derived values based on changes.
          * Please make this function idempotent. Overwrite this with your own specific implementation.
          * @param  {T} newProps
          * @param  {T} oldProps
          */
-        this.calculator = function (p, o) { return p; };
-        var context = this;
+        this.calculator = (p, o) => p;
+        const context = this;
         this.projector = createProjector();
         this.cache = createCache();
         this.registerAction = this.makeActionStately(function stateUpdater(props) {
@@ -1499,28 +1463,28 @@ var FRETS = /** @class */ (function () {
      * @param  {any} data? A route data object
      * @returns string
      */
-    FRETS.prototype.getRouteLink = function (key, data) {
+    getRouteLink(key, data) {
         return this.routes[key].spec.build(data || {});
-    };
+    }
     /**
      * Change the browser location to match the path configured in the route with the
      * provided key. You still need to call an action to udpate state before the UI will re-render.
      * @param  {string} key
      * @param  {any} data?
      */
-    FRETS.prototype.navToRoute = function (key, data) {
-        var r = this.getRouteLink(key, data);
+    navToRoute(key, data) {
+        const r = this.getRouteLink(key, data);
         if (r) {
             this.navToPath(r);
         }
-    };
+    }
     /**
      * Update the browser location with the provided raw string path.
      * @param  {string} path
      */
-    FRETS.prototype.navToPath = function (path) {
+    navToPath(path) {
         window.history.pushState({}, null, path);
-    };
+    }
     /**
      * Registers simple form fields on the property model, and on the actions to update it. If the field key hasn't been
      * registered yet, it initializes that value on the properties with the value passed in. This makes it so that UI
@@ -1529,19 +1493,19 @@ var FRETS = /** @class */ (function () {
      * @param  {S} initialValue?
      * @returns IRegisteredField
      */
-    FRETS.prototype.registerField = function (key, initialValue) {
+    registerField(key, initialValue) {
         if (!this.modelProps.registeredFieldsValues[key]) {
             this.modelProps.registeredFieldsValues[key] = initialValue || "";
             this.modelProps.registeredFieldValidationErrors[key] = [];
         }
         if (!this.actions.registeredFieldActions[key]) {
-            this.actions.registeredFieldActions[key] = this.registerAction(function (evt, data) {
+            this.actions.registeredFieldActions[key] = this.registerAction((evt, data) => {
                 data.registeredFieldsValues[key] = evt.target.value;
                 return data;
             });
         }
         return this.getField(key);
-    };
+    }
     /**
      * Returns the field object that was previously registered with the given key.
      * Including an event handler that will update the field. Any validation errors on the field,
@@ -1549,13 +1513,13 @@ var FRETS = /** @class */ (function () {
      * @param  {string} key
      * @returns IRegisteredField
      */
-    FRETS.prototype.getField = function (key) {
+    getField(key) {
         return {
             handler: this.actions.registeredFieldActions[key],
             validationErrors: this.modelProps.registeredFieldValidationErrors[key],
             value: this.modelProps.registeredFieldsValues[key],
         };
-    };
+    }
     /**
      * Register a new route that will execute the given function whenever the provided path
      *  is matched during the model mutation step. This function should update the app state
@@ -1566,23 +1530,22 @@ var FRETS = /** @class */ (function () {
      * @param  {string} path
      * @param  {(routeName:string,routeParams:any,props:T)=>T} fn
      */
-    FRETS.prototype.registerRoute = function (routeName, path, fn) {
+    registerRoute(routeName, path, fn) {
         this.routes[routeName] = {
             calculator: fn,
             spec: new Path(path),
         };
-    };
+    }
     /**
      * The one and only place that this application model state is updated, first it runs the validation method,
      * then it runs any route functions, and finally runs the real state calculation method.
      * @param  {T} props
      */
-    FRETS.prototype.mutate = function (props) {
-        var _a;
-        var isValid = true;
-        var data = Object.assign({}, props);
+    mutate(props) {
+        let isValid = true;
+        let data = Object.assign({}, props);
         this.stateIsMutated = true;
-        _a = this.validator(data, this.modelProps), data = _a[0], isValid = _a[1];
+        [data, isValid] = this.validator(data, this.modelProps);
         if (!isValid) {
             this.modelProps = data;
             return;
@@ -1590,19 +1553,19 @@ var FRETS = /** @class */ (function () {
         data = this.applyRouteFunction(data);
         data = this.calculator(data, this.modelProps);
         this.modelProps = data;
-    };
+    }
     /**
      * Checks to see if any of the registerd routes are matched and then updates the app state using
      * the provided transformation function.
      * @param  {T} props
      * @returns T
      */
-    FRETS.prototype.applyRouteFunction = function (props) {
-        var data = Object.assign({}, props);
-        for (var key in this.routes) {
+    applyRouteFunction(props) {
+        let data = Object.assign({}, props);
+        for (const key in this.routes) {
             if (this.routes.hasOwnProperty(key)) {
-                var entry = this.routes[key];
-                var res = entry.spec.test(window.location.pathname);
+                const entry = this.routes[key];
+                const res = entry.spec.test(window.location.pathname);
                 // console.log("Looking for Route", key, res);
                 if (res) {
                     data = entry.calculator(key, res, data);
@@ -1611,24 +1574,21 @@ var FRETS = /** @class */ (function () {
             }
         }
         return data; // fall through to default
-    };
-    return FRETS;
-}());
+    }
+}
 
-var PropsWithFields = /** @class */ (function () {
-    function PropsWithFields() {
+class PropsWithFields {
+    constructor() {
         this.registeredFieldsValues = {};
         this.registeredFieldValidationErrors = {};
     }
-    return PropsWithFields;
-}());
+}
 
-var ActionsWithFields = /** @class */ (function () {
-    function ActionsWithFields() {
+class ActionsWithFields {
+    constructor() {
         this.registeredFieldActions = {};
     }
-    return ActionsWithFields;
-}());
+}
 
 export { FRETS, PropsWithFields, ActionsWithFields };
 //# sourceMappingURL=frets.js.map
