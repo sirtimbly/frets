@@ -2,7 +2,7 @@
 import commonjs from 'rollup-plugin-commonjs';
 import nodeResolve from 'rollup-plugin-node-resolve';
 import alias from 'rollup-plugin-alias';
-
+import { terser } from 'rollup-plugin-terser';
 
 const substituteModulePaths = {
     'crypto': 'build/module/adapters/crypto.browser.js',
@@ -11,8 +11,10 @@ const substituteModulePaths = {
 }
 
 export default {
-    entry: 'build/module/index.js',
-    sourceMap: true,
+    input: 'build/module/index.js',
+    output: {
+        name: 'frets'
+    },
     plugins: [
         alias(substituteModulePaths),
         nodeResolve({
@@ -25,6 +27,7 @@ export default {
               // of a module in node_modules
               'maquette': [ 'Projector', 'createProjector' ]
             }
-        })
+        }),
+        terser()
     ]
 }

@@ -828,7 +828,6 @@ function createCommonjsModule(fn, module) {
 }
 
 var cjs = createCommonjsModule(function (module, exports) {
-'use strict';
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
@@ -1028,6 +1027,8 @@ exports.keep = keep;
 unwrapExports(cjs);
 var cjs_1 = cjs.parse;
 var cjs_2 = cjs.build;
+var cjs_3 = cjs.omit;
+var cjs_4 = cjs.keep;
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
@@ -1636,4 +1637,4 @@ var ActionsWithFields = /** @class */ (function () {
 exports.FRETS = FRETS;
 exports.PropsWithFields = PropsWithFields;
 exports.ActionsWithFields = ActionsWithFields;
-//# sourceMappingURL=index.cjs.js.map
+//# sourceMappingURL=frets.cjs.js.map
