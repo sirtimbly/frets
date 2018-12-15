@@ -1,6 +1,8 @@
 node_modules
 build/*
 !build/browser
+!build/main
+!build/module
 
 test
 public
