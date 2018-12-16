@@ -1375,7 +1375,7 @@ class FRETS {
             this.stateRenderer = () => {
                 // console.log("Async state render function executing. allow async render: " + this.allowAsyncRender);
                 if (this.allowAsyncRender) {
-                    renderFn(this.modelProps, this.actions).then((n) => {
+                    renderFn(this).then((n) => {
                         // at this point the lazy loading should be complete so let's invalidate the cache and render again once
                         this.cache.invalidate();
                         this.allowAsyncRender = false;
@@ -1458,6 +1458,7 @@ class FRETS {
             context.render(props, false);
         }, this.modelProps);
         window.onpopstate = function (evt) {
+            // console.log("PopState handler called", this.location.href);
             context.render(context.modelProps);
         };
     }
@@ -1468,6 +1469,9 @@ class FRETS {
      * @returns string
      */
     getRouteLink(key, data) {
+        if (!this.routes || !this.routes[key]) {
+            return false;
+        }
         return this.routes[key].spec.build(data || {});
     }
     /**
@@ -1487,7 +1491,12 @@ class FRETS {
      * @param  {string} path
      */
     navToPath(path) {
-        window.history.pushState({}, null, path);
+        try {
+            window.history.pushState(this.modelProps, "", path);
+        }
+        catch (error) {
+            window.location.pathname = path;
+        }
     }
     /**
      * Registers simple form fields on the property model, and on the actions to update it. If the field key hasn't been

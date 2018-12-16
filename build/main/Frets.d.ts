@@ -59,7 +59,7 @@ export declare class FRETS<T extends PropsWithFields, U extends ActionsWithField
      * of UI modules that aren't needed right away.
      * @param  {(props:T,actions:U)=>Promise<VNode>} renderFn
      */
-    registerViewAsync: (renderFn: (props: T, actions: U) => Promise<VNode>) => Promise<void>;
+    registerViewAsync: (renderFn: (app: FRETS<T, U>) => Promise<VNode>) => Promise<void>;
     /**
      * The Render function is useful for when an async promise resolves (like from a network request) - and you need
      *  to update the props and re-render the app with the new data.

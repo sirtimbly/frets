@@ -55,6 +55,7 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
       context.render(props, false);
     }, this.modelProps);
     window.onpopstate = function(this: Window, evt: Event) {
+      // console.log("PopState handler called", this.location.href);
       context.render(context.modelProps);
     };
   }
@@ -79,11 +80,11 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
  * of UI modules that aren't needed right away.
  * @param  {(props:T,actions:U)=>Promise<VNode>} renderFn
  */
-  public registerViewAsync = async (renderFn: (props: T, actions: U) => Promise<VNode>) => {
+  public registerViewAsync = async (renderFn: (app: FRETS<T, U>) => Promise<VNode>) => {
     this.stateRenderer = () => {
       // console.log("Async state render function executing. allow async render: " + this.allowAsyncRender);
       if (this.allowAsyncRender) {
-        renderFn(this.modelProps, this.actions).then((n: VNode) => {
+        renderFn(this).then((n: VNode) => {
           // at this point the lazy loading should be complete so let's invalidate the cache and render again once
           this.cache.invalidate();
           this.allowAsyncRender = false;
@@ -130,6 +131,9 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    * @returns string
    */
   public getRouteLink(key: string, data?: any): string | false {
+    if (!this.routes || !this.routes[key]) {
+      return false;
+    }
     return this.routes[key].spec.build(data || {});
   }
   /**
@@ -149,7 +153,11 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    * @param  {string} path
    */
   public navToPath(path: string) {
-    window.history.pushState({}, null, path);
+    try {
+      window.history.pushState(this.modelProps, "", path);
+    } catch (error) {
+      window.location.pathname = path;
+    }
   }
 
   /**
