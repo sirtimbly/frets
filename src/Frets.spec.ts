@@ -39,9 +39,8 @@ test("renders default div", (t) => {
 
 test("actions change state", (t) => {
   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
-  F.actions.changeState = F.registerAction((e: Event, props: SimpleProps) => {
-    props.messages = ["test"];
-    return props;
+  F.actions.changeState = F.registerAction((e: Event, props: Readonly<SimpleProps>) => {
+    return {...props, messages: ["test"]};
   });
   F.registerView((app: main): VNode => {
     return h("div", [
@@ -69,13 +68,11 @@ test("change state but validator stops mutation", (t) => {
     }
     return [newProps, true];
   };
-  F.actions.setValid = F.registerAction((e: Event, props: SimpleProps) => {
-    props.checkValue = 1;
-    return props;
+  F.actions.setValid = F.registerAction((e: Event, props: SimpleProps): SimpleProps => {
+    return {...props, checkValue: 1};
   });
-  F.actions.setInvalid = F.registerAction((e: Event, props: SimpleProps) => {
-    props.checkValue = -1;
-    return props;
+  F.actions.setInvalid = F.registerAction((e: Event, props: SimpleProps): SimpleProps => {
+    return {...props, checkValue: -1} ;
   });
   F.registerView((app: main): VNode => {
     return h("div", [
@@ -97,17 +94,16 @@ test("change state but validator stops mutation", (t) => {
 
 test("state updates async", (t) => {
   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
-
-  F.registerView((app: main): VNode => {
+  F.actions.changeState = F.registerAction((e: Event, data: Readonly<SimpleProps>): SimpleProps => {
     setTimeout(() => {
-      const p = Object.assign({}, app.modelProps);
-      p.messages = ["async"];
-      F.render(p);
-      const proj2 = createTestProjector(F.stateRenderer);
-      const list2 = proj2.query("ul");
-      t.truthy(list2.children.length);
-      t.is(list2.children[0].text, "async");
+      F.render({
+        ...data,
+        messages: ["async"],
+      });
     }, 50);
+    return data;
+  });
+  F.registerView((app: main): VNode => {
     return h("div", [
       h("button", { onclick: app.actions.changeState }, ["Load Messages"]),
       h("ul", app.modelProps.messages.map((x) => h("li", [x.toString()]))),
@@ -117,6 +113,12 @@ test("state updates async", (t) => {
   const proj = createTestProjector(F.stateRenderer);
   const list = proj.query("ul");
   t.falsy(list.children.length);
+  proj.query("button").simulate.click();
+  setTimeout(() => {
+    const list2 = proj.query("ul");
+    t.truthy(list2.children.length);
+    t.is(list2.children[0].text, "async");
+  }, 100);
 });
 
 test("registers a field", (t) => {
@@ -205,8 +207,7 @@ test("model props can only be updated through an action", (t) => {
   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
   F.registerView((app): VNode => {
     // try overwriting something in modelProps
-
-    app.modelProps.messages.push("try");
+    t.throws(() => app.modelProps.messages.push("try"));
 
     return h("div", [
       (!app.modelProps.activeScreen || app.modelProps.activeScreen === SimpleScreens.Home)

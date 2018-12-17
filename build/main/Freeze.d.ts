@@ -1,1 +1,1 @@
-export default function simpleDeepFreeze<T>(object: T): T;
+export default function deepFreeze<T>(object: T): T;

@@ -9,7 +9,7 @@ export interface IRegisteredField<T> {
 }
 export interface IRouteRegistry<T> {
     [key: string]: {
-        calculator: (routeName: string, routeParams: any, props: T) => T;
+        calculator: (routeName: string, routeParams: any, props: Readonly<T>) => T;
         spec: Path;
     };
 }
@@ -24,13 +24,13 @@ export declare class FRETS<T extends PropsWithFields, U extends ActionsWithField
      *  the VNode definitions of your UI rendering functions. Then the provided action function is executed to
      *  update some properties in state. Then the app will run data changes through the one mutations method, and
      *  then it will tell Maquette to schedule a re-rendering of the UI on the next animation frame.
-     * @param  {(e:Event,data:T)=>T} actionFn A function which will be called in an event handler and is expected
-     *  to change the state in some way.
+     * @param  {(e:Event,data:Readonly<T>)=>T} actionFn A function which will be called in an event handler and is
+     *    expected to change the state in some way.
      */
-    registerAction: (actionFn: (e: Event, data: T) => T) => (e: Event) => any;
+    registerAction: (actionFn: (e: Event, data: Readonly<T>) => T) => (e: Event) => any;
     routes: IRouteRegistry<T>;
     private internalModelProps;
-    private deepCopyOfModelProps;
+    private externalModelProps;
     private projector;
     private cache;
     private cachedNode;
@@ -44,10 +44,10 @@ export declare class FRETS<T extends PropsWithFields, U extends ActionsWithField
      */
     constructor(modelProps: T, actions: U);
     /**
-     * Get a deep copy of the current state. Not a reference to the actual internal state.
+     * Get a deep-frozen copy of the current state. For immutability it's not a reference to the actual internal state.
      * @returns T
      */
-    modelProps: T;
+    readonly modelProps: Readonly<T>;
     /**
      * The function used to render VNodes for insertion into the page DOM.
      * This method should be configured by calling FRETS.registerView(...)
@@ -69,9 +69,9 @@ export declare class FRETS<T extends PropsWithFields, U extends ActionsWithField
     /**
      * The Render function is useful for when an async promise resolves (like from a network request) - and you need
      *  to update the props and re-render the app with the new data.
-     * @param  {T} props
+     * @param  {Readonly<T>} props
      */
-    render: (props: T, recalculate?: boolean) => void;
+    render: (props: Readonly<T>, recalculate?: boolean) => void;
     /**
      * Mount the application to the DOM.
      * @param  {string} id The id of the dom element to replace
@@ -130,35 +130,35 @@ export declare class FRETS<T extends PropsWithFields, U extends ActionsWithField
      * @param  {string} path
      * @param  {(routeName:string,routeParams:any,props:T)=>T} fn
      */
-    registerRoute(routeName: string, path: string, fn: (routeName: string, routeParams: any, props: T) => T): void;
+    registerRoute(routeName: string, path: string, fn: (routeName: string, routeParams: any, props: Readonly<T>) => T): void;
     /**
      * Check for any properties that are invalid or out of bounds and either reset them or add validation/warning messages
      *  somewhere on the props for display. Please make this function idempotent. Overwrite this with your own specifc
      *  implementation. It can return an updated state object containing validation error messages as well as returning
      *  false in the tuple to make mutation stop early and show errors to the user. The calculate method and route methods
      * will not be called when your validate method returns false in the second parameter of the return tuple.
-     * @param  {T} newProps
-     * @param  {T} oldProps
+     * @param  {Readonly<T>} newProps
+     * @param  {Readonly<T>} oldProps
      */
-    validator: (newProps: T, oldProps: T) => [T, boolean];
+    validator: (newProps: Readonly<T>, oldProps: Readonly<T>) => [T, boolean];
     /**
      * The primary state calculation method, looks at all the properties and updates any derived values based on changes.
      * Please make this function idempotent. Overwrite this with your own specific implementation.
-     * @param  {T} newProps
-     * @param  {T} oldProps
+     * @param  {Readonly<T>} newProps
+     * @param  {Readonly<T>} oldProps
      */
-    calculator: (newProps: T, oldProps: T) => T;
-    private mutableProps;
+    calculator: (newProps: Readonly<T>, oldProps: Readonly<T>) => T;
+    private mutateProps;
     /**
      * The one and only place that this application model state is updated, first it runs the validation method,
      * then it runs any route functions, and finally runs the real state calculation method.
-     * @param  {T} props
+     * @param  {Readonly<T>} props
      */
     private mutate;
     /**
      * Checks to see if any of the registerd routes are matched and then updates the app state using
      * the provided transformation function.
-     * @param  {T} props
+     * @param  {Readonly<T>} props
      * @returns T
      */
     private applyRouteFunction;

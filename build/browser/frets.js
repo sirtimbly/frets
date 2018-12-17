@@ -1323,6 +1323,24 @@ var Path = /** @class */ (function () {
     return Path;
 }());
 
+// copied from https://github.com/remix/simple-deep-freeze
+function deepFreeze(object) {
+    if (Object.isFrozen(object)) {
+        return object;
+    }
+    Object.freeze(object);
+    // tslint:disable-next-line:only-arrow-functions
+    Object.getOwnPropertyNames(object).forEach(function (prop) {
+        if (object.hasOwnProperty(prop)
+            && object[prop] !== null
+            && (typeof object[prop] === "object" || typeof object[prop] === "function")
+            && !Object.isFrozen(object[prop])) {
+            deepFreeze(object[prop]);
+        }
+    });
+    return object;
+}
+
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -1376,7 +1394,7 @@ class FRETS {
                         this.allowAsyncRender = false;
                         // console.log("loaded view code, scheduling render with new VNode");
                         this.cachedNode = n;
-                        this.render(this.mutableProps);
+                        this.render(this.modelProps);
                     });
                 }
                 return h(`div#${this.rootId}`, [this.cachedNode]);
@@ -1385,7 +1403,7 @@ class FRETS {
         /**
          * The Render function is useful for when an async promise resolves (like from a network request) - and you need
          *  to update the props and re-render the app with the new data.
-         * @param  {T} props
+         * @param  {Readonly<T>} props
          */
         this.render = (props, recalculate = true) => {
             // console.log("Render: checking the cache");
@@ -1405,7 +1423,7 @@ class FRETS {
          */
         this.mountTo = (id) => {
             // console.log("Mount To");
-            this.mutate(this.mutableProps);
+            this.mutate(this.modelProps);
             this.projector.merge(document.getElementById(id), this.stateRenderer);
         };
         /**
@@ -1421,10 +1439,9 @@ class FRETS {
                     // since state has probably changed lets allow async rendering once
                     // console.log("event handled: action " + actionFn.name + " event.target = " + (e.target as HTMLElement).id);
                     this.allowAsyncRender = true;
-                    const box = Object.assign({}, this.mutableProps); // make a new copy of model data (is this needed?)
-                    const newData = actionFn(e, box);
+                    const newData = actionFn(e, this.modelProps);
                     this.mutate(newData);
-                    presenterFn(this.mutableProps);
+                    presenterFn(this.modelProps);
                 };
             };
         };
@@ -1435,38 +1452,35 @@ class FRETS {
          *  implementation. It can return an updated state object containing validation error messages as well as returning
          *  false in the tuple to make mutation stop early and show errors to the user. The calculate method and route methods
          * will not be called when your validate method returns false in the second parameter of the return tuple.
-         * @param  {T} newProps
-         * @param  {T} oldProps
+         * @param  {Readonly<T>} newProps
+         * @param  {Readonly<T>} oldProps
          */
         this.validator = (p, o) => [p, true];
         /**
          * The primary state calculation method, looks at all the properties and updates any derived values based on changes.
          * Please make this function idempotent. Overwrite this with your own specific implementation.
-         * @param  {T} newProps
-         * @param  {T} oldProps
+         * @param  {Readonly<T>} newProps
+         * @param  {Readonly<T>} oldProps
          */
         this.calculator = (p, o) => p;
         const context = this;
-        this.mutableProps = modelProps;
+        this.mutateProps(modelProps);
         this.projector = createProjector();
         this.cache = createCache();
         this.registerAction = this.makeActionStately(function stateUpdater(props) {
             context.render(props, false);
-        }, this.mutableProps);
+        }, this.modelProps);
         window.onpopstate = function (evt) {
             // console.log("PopState handler called", this.location.href);
-            context.render(context.mutableProps);
+            context.render(context.modelProps);
         };
     }
     /**
-     * Get a deep copy of the current state. Not a reference to the actual internal state.
+     * Get a deep-frozen copy of the current state. For immutability it's not a reference to the actual internal state.
      * @returns T
      */
     get modelProps() {
-        return JSON.parse(JSON.stringify(this.deepCopyOfModelProps));
-    }
-    set modelProps(v) {
-        throw new Error("You cannot update the internal state this way. Use an Action.");
+        return this.externalModelProps;
     }
     /**
      * Returns a path when given the key of a route that was previously registered.
@@ -1498,7 +1512,7 @@ class FRETS {
      */
     navToPath(path) {
         try {
-            window.history.pushState(this.mutableProps, "", path);
+            window.history.pushState(this.mutateProps, "", path);
         }
         catch (error) {
             window.location.pathname = path;
@@ -1513,16 +1527,19 @@ class FRETS {
      * @returns IRegisteredField
      */
     registerField(key, initialValue) {
-        if (!this.mutableProps.registeredFieldsValues[key]) {
-            const props = this.mutableProps;
-            props.registeredFieldsValues[key] = initialValue || "";
-            props.registeredFieldValidationErrors[key] = [];
-            this.mutableProps = props;
+        if (!this.modelProps.registeredFieldsValues[key]) {
+            const props = Object.assign({}, this.modelProps, { registeredFieldValidationErrors: Object.assign({
+                    [key]: [],
+                }, this.modelProps.registeredFieldValidationErrors), registeredFieldsValues: Object.assign({
+                    [key]: initialValue || "",
+                }, this.modelProps.registeredFieldsValues) });
+            this.mutateProps(props);
         }
         if (!this.actions.registeredFieldActions[key]) {
             this.actions.registeredFieldActions[key] = this.registerAction((evt, data) => {
-                data.registeredFieldsValues[key] = evt.target.value;
-                return data;
+                const props = Object.assign({}, data, { registeredFieldsValues: Object.assign({}, data.registeredFieldsValues) });
+                props.registeredFieldsValues[key] = evt.target.value;
+                return props;
             });
         }
         return this.getField(key);
@@ -1537,8 +1554,8 @@ class FRETS {
     getField(key) {
         return {
             handler: this.actions.registeredFieldActions[key],
-            validationErrors: this.mutableProps.registeredFieldValidationErrors[key],
-            value: this.mutableProps.registeredFieldsValues[key],
+            validationErrors: this.modelProps.registeredFieldValidationErrors[key],
+            value: this.modelProps.registeredFieldsValues[key],
         };
     }
     /**
@@ -1557,36 +1574,36 @@ class FRETS {
             spec: new Path(path),
         };
     }
-    get mutableProps() {
-        return this.internalModelProps;
-    }
-    set mutableProps(v) {
+    // private get mutableProps(): T {
+    //   return this.internalModelProps;
+    // }
+    mutateProps(v) {
         // console.log("Setting mutable props", v);
-        this.internalModelProps = v;
-        this.deepCopyOfModelProps = v;
+        // this.internalModelProps = JSON.parse(JSON.stringify(v));
+        this.externalModelProps = deepFreeze(v);
     }
     /**
      * The one and only place that this application model state is updated, first it runs the validation method,
      * then it runs any route functions, and finally runs the real state calculation method.
-     * @param  {T} props
+     * @param  {Readonly<T>} props
      */
     mutate(props) {
         let isValid = true;
         let data = props;
         this.stateIsMutated = true;
-        [data, isValid] = this.validator(data, this.mutableProps);
+        [data, isValid] = this.validator(data, this.modelProps);
         if (!isValid) {
-            this.mutableProps = data;
+            this.mutateProps(data);
             return;
         }
         data = this.applyRouteFunction(data);
-        data = this.calculator(data, this.mutableProps);
-        this.mutableProps = data;
+        data = this.calculator(data, this.modelProps);
+        this.mutateProps(data);
     }
     /**
      * Checks to see if any of the registerd routes are matched and then updates the app state using
      * the provided transformation function.
-     * @param  {T} props
+     * @param  {Readonly<T>} props
      * @returns T
      */
     applyRouteFunction(props) {
