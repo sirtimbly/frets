@@ -20,7 +20,7 @@
     "build:resolve-sourcemaps": "sorcery -i build/browser/frets.js && sorcery -i build/browser/frets.cjs.js",
     "build:tests": "trash test && node config/exports/build-tests.js",
     "lint": "tslint --project .",
-    "unit": "npm run build && npm run build:tests && nyc ava",
+    "unit": "npm run build && npm run build:tests && nyc ava --timout 500",
     "check-coverage": "nyc check-coverage --lines 10 --functions 10 --branches 0",
     "test": "npm run lint && npm run unit && npm run check-coverage",
     "watch": "npm run build && npm run build:tests -- --no-browser && concurrently -r --kill-others 'npm run --silent build:main -- -w' 'npm run --silent build:tests -- -w --no-browser' 'sleepms 2000 && ava --watch'",

@@ -1,17 +1,21 @@
 "use strict";
+// copied from https://github.com/remix/simple-deep-freeze
 Object.defineProperty(exports, "__esModule", { value: true });
-function simpleDeepFreeze(object) {
-    if (object !== undefined) {
-        Object.keys(object).forEach((key) => {
-            if (object[key] !== undefined) {
-                Object.defineProperty(object, key, Object.assign({}, object[key], { set: (x) => {
-                        throw new Error("You cannot update the internal state this way. Use an Action.");
-                    } }));
-                simpleDeepFreeze(object[key]);
-            }
-        });
+function deepFreeze(object) {
+    if (Object.isFrozen(object)) {
+        return object;
     }
+    Object.freeze(object);
+    // tslint:disable-next-line:only-arrow-functions
+    Object.getOwnPropertyNames(object).forEach(function (prop) {
+        if (object.hasOwnProperty(prop)
+            && object[prop] !== null
+            && (typeof object[prop] === "object" || typeof object[prop] === "function")
+            && !Object.isFrozen(object[prop])) {
+            deepFreeze(object[prop]);
+        }
+    });
     return object;
 }
-exports.default = simpleDeepFreeze;
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiRnJlZXplLmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsiLi4vLi4vc3JjL0ZyZWV6ZS50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOztBQUFBLFNBQXdCLGdCQUFnQixDQUFJLE1BQVM7SUFDbkQsSUFBSSxNQUFNLEtBQUssU0FBUyxFQUFFO1FBQ3hCLE1BQU0sQ0FBQyxJQUFJLENBQUMsTUFBTSxDQUFDLENBQUMsT0FBTyxDQUFDLENBQUMsR0FBRyxFQUFFLEVBQUU7WUFDbEMsSUFBSSxNQUFNLENBQUMsR0FBRyxDQUFDLEtBQUssU0FBUyxFQUFFO2dCQUM3QixNQUFNLENBQUMsY0FBYyxDQUFDLE1BQU0sRUFBRSxHQUFHLG9CQUM1QixNQUFNLENBQUMsR0FBRyxDQUFDLElBQ2QsR0FBRyxFQUFFLENBQUMsQ0FBQyxFQUFFLEVBQUU7d0JBQ1QsTUFBTSxJQUFJLEtBQUssQ0FBQywrREFBK0QsQ0FBQyxDQUFDO29CQUNuRixDQUFDLElBQ0QsQ0FBQztnQkFDSCxnQkFBZ0IsQ0FBQyxNQUFNLENBQUMsR0FBRyxDQUFDLENBQUMsQ0FBQzthQUMvQjtRQUNILENBQUMsQ0FBQyxDQUFDO0tBQ0o7SUFFRCxPQUFPLE1BQU0sQ0FBQztBQUNoQixDQUFDO0FBaEJELG1DQWdCQyJ9
+exports.default = deepFreeze;
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiRnJlZXplLmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsiLi4vLi4vc3JjL0ZyZWV6ZS50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiO0FBQUEsMERBQTBEOztBQUUxRCxTQUF3QixVQUFVLENBQUksTUFBUztJQUU3QyxJQUFJLE1BQU0sQ0FBQyxRQUFRLENBQUMsTUFBTSxDQUFDLEVBQUU7UUFDM0IsT0FBTyxNQUFNLENBQUM7S0FDZjtJQUVELE1BQU0sQ0FBQyxNQUFNLENBQUMsTUFBTSxDQUFDLENBQUM7SUFDdEIsZ0RBQWdEO0lBQ2hELE1BQU0sQ0FBQyxtQkFBbUIsQ0FBQyxNQUFNLENBQUMsQ0FBQyxPQUFPLENBQUMsVUFBUyxJQUFJO1FBQ3RELElBQUksTUFBTSxDQUFDLGNBQWMsQ0FBQyxJQUFJLENBQUM7ZUFDNUIsTUFBTSxDQUFDLElBQUksQ0FBQyxLQUFLLElBQUk7ZUFDckIsQ0FBQyxPQUFPLE1BQU0sQ0FBQyxJQUFJLENBQUMsS0FBSyxRQUFRLElBQUksT0FBTyxNQUFNLENBQUMsSUFBSSxDQUFDLEtBQUssVUFBVSxDQUFDO2VBQ3hFLENBQUMsTUFBTSxDQUFDLFFBQVEsQ0FBQyxNQUFNLENBQUMsSUFBSSxDQUFDLENBQUMsRUFBRTtZQUNqQyxVQUFVLENBQUMsTUFBTSxDQUFDLElBQUksQ0FBQyxDQUFDLENBQUM7U0FDMUI7SUFDSCxDQUFDLENBQUMsQ0FBQztJQUVILE9BQU8sTUFBTSxDQUFDO0FBQ2hCLENBQUM7QUFsQkQsNkJBa0JDIn0=

@@ -1,17 +1,21 @@
-export default function simpleDeepFreeze<T>(object: T): T {
-  if (object !== undefined) {
-    Object.keys(object).forEach((key) => {
-      if (object[key] !== undefined) {
-        Object.defineProperty(object, key, {
-          ...object[key],
-          set: (x) => {
-            throw new Error("You cannot update the internal state this way. Use an Action.");
-          },
-        });
-        simpleDeepFreeze(object[key]);
-      }
-    });
+// copied from https://github.com/remix/simple-deep-freeze
+
+export default function deepFreeze<T>(object: T): T {
+
+  if (Object.isFrozen(object)) {
+    return object;
   }
+
+  Object.freeze(object);
+  // tslint:disable-next-line:only-arrow-functions
+  Object.getOwnPropertyNames(object).forEach(function(prop) {
+    if (object.hasOwnProperty(prop)
+    && object[prop] !== null
+    && (typeof object[prop] === "object" || typeof object[prop] === "function")
+    && !Object.isFrozen(object[prop])) {
+      deepFreeze(object[prop]);
+    }
+  });
 
   return object;
 }

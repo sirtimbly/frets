@@ -2,7 +2,7 @@ import { CalculationCache, createProjector, h, Projector, VNode } from "maquette
 import * as maquette from "maquette";
 import Path from "path-parser";
 import { ActionsWithFields } from "./ActionsFieldRegistry";
-import simpleDeepFreeze from "./Freeze";
+import deepFreeze from "./Freeze";
 import { PropsWithFields } from "./PropsFieldRegistry";
 
 export interface IRegisteredField<T> {
@@ -13,7 +13,7 @@ export interface IRegisteredField<T> {
 
 export interface IRouteRegistry<T> {
   [key: string]: {
-    calculator: (routeName: string, routeParams: any, props: T) => T;
+    calculator: (routeName: string, routeParams: any, props: Readonly<T>) => T;
     spec: Path;
   };
 }
@@ -29,14 +29,14 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    *  the VNode definitions of your UI rendering functions. Then the provided action function is executed to
    *  update some properties in state. Then the app will run data changes through the one mutations method, and
    *  then it will tell Maquette to schedule a re-rendering of the UI on the next animation frame.
-   * @param  {(e:Event,data:T)=>T} actionFn A function which will be called in an event handler and is expected
-   *  to change the state in some way.
+   * @param  {(e:Event,data:Readonly<T>)=>T} actionFn A function which will be called in an event handler and is
+   *    expected to change the state in some way.
    */
-  public registerAction: (actionFn: (e: Event, data: T) => T) => (e: Event) => any;
+  public registerAction: (actionFn: (e: Event, data: Readonly<T>) => T) => (e: Event) => any;
 
   public routes: IRouteRegistry<T> = {};
   private internalModelProps: T;
-  private deepCopyOfModelProps: T;
+  private externalModelProps: T;
   private projector: Projector;
   private cache: CalculationCache<T>;
   private cachedNode: VNode = h("div#default");
@@ -51,28 +51,24 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    */
   constructor(modelProps: T, public actions: U) {
     const context = this;
-    this.mutableProps = modelProps;
+    this.mutateProps(modelProps);
     this.projector = createProjector();
     this.cache = maquette.createCache<T>();
     this.registerAction = this.makeActionStately( function stateUpdater(props: T): void {
       context.render(props, false);
-    }, this.mutableProps);
+    }, this.modelProps);
     window.onpopstate = function(this: Window, evt: Event) {
       // console.log("PopState handler called", this.location.href);
-      context.render(context.mutableProps);
+      context.render(context.modelProps);
     };
   }
 
   /**
-   * Get a deep copy of the current state. Not a reference to the actual internal state.
+   * Get a deep-frozen copy of the current state. For immutability it's not a reference to the actual internal state.
    * @returns T
    */
-  public get modelProps(): T {
-    return JSON.parse(JSON.stringify(this.deepCopyOfModelProps));
-  }
-
-  public set modelProps(v: T) {
-    throw new Error("You cannot update the internal state this way. Use an Action.");
+  public get modelProps(): Readonly<T> {
+    return this.externalModelProps;
   }
 
   /**
@@ -106,7 +102,7 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
           this.allowAsyncRender = false;
           // console.log("loaded view code, scheduling render with new VNode");
           this.cachedNode = n;
-          this.render(this.mutableProps);
+          this.render(this.modelProps);
         });
       }
       return h(`div#${this.rootId}`, [this.cachedNode]);
@@ -116,9 +112,9 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
   /**
    * The Render function is useful for when an async promise resolves (like from a network request) - and you need
    *  to update the props and re-render the app with the new data.
-   * @param  {T} props
+   * @param  {Readonly<T>} props
    */
-  public render = (props: T, recalculate: boolean = true) => {
+  public render = (props: Readonly<T>, recalculate: boolean = true) => {
     // console.log("Render: checking the cache");
     this.cache.result([JSON.stringify(props)], () => {
       // console.log("Render: props have changed. ", JSON.stringify(this.mutableProps));
@@ -137,7 +133,7 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    */
   public mountTo = (id: string) => {
     // console.log("Mount To");
-    this.mutate(this.mutableProps);
+    this.mutate(this.modelProps);
     this.projector.merge(document.getElementById(id), this.stateRenderer);
   }
   /**
@@ -170,7 +166,7 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    */
   public navToPath(path: string) {
     try {
-      window.history.pushState(this.mutableProps, "", path);
+      window.history.pushState(this.mutateProps, "", path);
     } catch (error) {
       window.location.pathname = path;
     }
@@ -189,10 +185,9 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
         // since state has probably changed lets allow async rendering once
         // console.log("event handled: action " + actionFn.name + " event.target = " + (e.target as HTMLElement).id);
         this.allowAsyncRender = true;
-        const box = Object.assign({}, this.mutableProps); // make a new copy of model data (is this needed?)
-        const newData = actionFn(e, box);
+        const newData = actionFn(e, this.modelProps);
         this.mutate(newData);
-        presenterFn(this.mutableProps);
+        presenterFn(this.modelProps);
       };
     };
   }
@@ -205,17 +200,26 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    * @returns IRegisteredField
    */
   public registerField<S>(key: string, initialValue?: S): IRegisteredField<S> {
-    if (!this.mutableProps.registeredFieldsValues[key]) {
-      const props = this.mutableProps;
-      props.registeredFieldsValues[key] = initialValue || "";
-      props.registeredFieldValidationErrors[key] = [];
-      this.mutableProps = props;
-
+    if (!this.modelProps.registeredFieldsValues[key]) {
+      const props: T = {
+        ...this.modelProps,
+        registeredFieldValidationErrors: Object.assign({
+          [key]: [],
+        }, this.modelProps.registeredFieldValidationErrors),
+        registeredFieldsValues: Object.assign({
+          [key]: initialValue || "",
+        }, this.modelProps.registeredFieldsValues),
+      };
+      this.mutateProps(props);
     }
     if (!this.actions.registeredFieldActions[key]) {
       this.actions.registeredFieldActions[key] = this.registerAction((evt: Event, data: T) => {
-        data.registeredFieldsValues[key] = (evt.target as HTMLInputElement).value;
-        return data;
+        const props: T = {
+          ...data,
+          registeredFieldsValues: Object.assign({}, data.registeredFieldsValues),
+        };
+        props.registeredFieldsValues[key] = (evt.target as HTMLInputElement).value;
+        return props;
       });
     }
 
@@ -232,8 +236,8 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
   public getField<S>(key: string): IRegisteredField<S> {
     return {
       handler: this.actions.registeredFieldActions[key],
-      validationErrors: this.mutableProps.registeredFieldValidationErrors[key],
-      value: this.mutableProps.registeredFieldsValues[key],
+      validationErrors: this.modelProps.registeredFieldValidationErrors[key],
+      value: this.modelProps.registeredFieldsValues[key],
     };
   }
   /**
@@ -246,7 +250,9 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    * @param  {string} path
    * @param  {(routeName:string,routeParams:any,props:T)=>T} fn
    */
-  public registerRoute(routeName: string, path: string, fn: (routeName: string, routeParams: any, props: T) => T) {
+  public registerRoute(routeName: string,
+                       path: string,
+                       fn: (routeName: string, routeParams: any, props: Readonly<T>) => T) {
     this.routes[routeName] = {
       calculator: fn,
       spec: new Path(path),
@@ -261,55 +267,55 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    *  implementation. It can return an updated state object containing validation error messages as well as returning
    *  false in the tuple to make mutation stop early and show errors to the user. The calculate method and route methods
    * will not be called when your validate method returns false in the second parameter of the return tuple.
-   * @param  {T} newProps
-   * @param  {T} oldProps
+   * @param  {Readonly<T>} newProps
+   * @param  {Readonly<T>} oldProps
    */
-  public validator: (newProps: T, oldProps: T) => [T, boolean] = (p, o) => [p, true];
+  public validator: (newProps: Readonly<T>, oldProps: Readonly<T>) => [T, boolean] = (p, o) => [p, true];
 
   /**
    * The primary state calculation method, looks at all the properties and updates any derived values based on changes.
    * Please make this function idempotent. Overwrite this with your own specific implementation.
-   * @param  {T} newProps
-   * @param  {T} oldProps
+   * @param  {Readonly<T>} newProps
+   * @param  {Readonly<T>} oldProps
    */
-  public calculator: (newProps: T, oldProps: T) => T = (p, o) => p;
+  public calculator: (newProps: Readonly<T>, oldProps: Readonly<T>) => T = (p, o) => p;
 
-  private get mutableProps(): T {
-    return this.internalModelProps;
-  }
+  // private get mutableProps(): T {
+  //   return this.internalModelProps;
+  // }
 
-  private set mutableProps(v: T) {
+  private mutateProps(v: Readonly<T>) {
     // console.log("Setting mutable props", v);
-    this.internalModelProps = v;
-    this.deepCopyOfModelProps = v;
+    // this.internalModelProps = JSON.parse(JSON.stringify(v));
+    this.externalModelProps = deepFreeze(v);
   }
 
   /**
    * The one and only place that this application model state is updated, first it runs the validation method,
    * then it runs any route functions, and finally runs the real state calculation method.
-   * @param  {T} props
+   * @param  {Readonly<T>} props
    */
-  private mutate(props: T) {
+  private mutate(props: Readonly<T>) {
     let isValid = true;
     let data = props;
     this.stateIsMutated = true;
-    [data, isValid] = this.validator(data, this.mutableProps);
+    [data, isValid] = this.validator(data, this.modelProps);
     if (!isValid) {
-      this.mutableProps = data;
+      this.mutateProps(data);
       return;
     }
     data = this.applyRouteFunction(data);
-    data = this.calculator(data, this.mutableProps);
-    this.mutableProps = data;
+    data = this.calculator(data, this.modelProps);
+    this.mutateProps(data);
   }
   /**
    * Checks to see if any of the registerd routes are matched and then updates the app state using
    * the provided transformation function.
-   * @param  {T} props
+   * @param  {Readonly<T>} props
    * @returns T
    */
-  private applyRouteFunction(props: T): T {
-    let data = Object.assign({}, props); // is this necessary?
+  private applyRouteFunction(props: Readonly<T>): T {
+    let data: T = Object.assign({}, props); // is this necessary?
     for (const key in this.routes) {
       if (this.routes.hasOwnProperty(key)) {
         const entry = this.routes[key];
