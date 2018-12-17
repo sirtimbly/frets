@@ -18,7 +18,6 @@ export interface IRouteRegistry<T> {
  * @template T, U
  */
 export declare class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
-    modelProps: T;
     actions: U;
     /**
      *  Define the concrete implementation of your actions. Your actions must be assigned to event handlers inside
@@ -30,6 +29,8 @@ export declare class FRETS<T extends PropsWithFields, U extends ActionsWithField
      */
     registerAction: (actionFn: (e: Event, data: T) => T) => (e: Event) => any;
     routes: IRouteRegistry<T>;
+    private internalModelProps;
+    private deepCopyOfModelProps;
     private projector;
     private cache;
     private cachedNode;
@@ -42,6 +43,11 @@ export declare class FRETS<T extends PropsWithFields, U extends ActionsWithField
      *  (which will be registered later with registerAction `App.actions.X = App.registerAction(fn)`)
      */
     constructor(modelProps: T, actions: U);
+    /**
+     * Get a deep copy of the current state. Not a reference to the actual internal state.
+     * @returns T
+     */
+    modelProps: T;
     /**
      * The function used to render VNodes for insertion into the page DOM.
      * This method should be configured by calling FRETS.registerView(...)
@@ -142,6 +148,7 @@ export declare class FRETS<T extends PropsWithFields, U extends ActionsWithField
      * @param  {T} oldProps
      */
     calculator: (newProps: T, oldProps: T) => T;
+    private mutableProps;
     /**
      * The one and only place that this application model state is updated, first it runs the validation method,
      * then it runs any route functions, and finally runs the real state calculation method.

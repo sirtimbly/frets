@@ -2,6 +2,7 @@ import { CalculationCache, createProjector, h, Projector, VNode } from "maquette
 import * as maquette from "maquette";
 import Path from "path-parser";
 import { ActionsWithFields } from "./ActionsFieldRegistry";
+import simpleDeepFreeze from "./Freeze";
 import { PropsWithFields } from "./PropsFieldRegistry";
 
 export interface IRegisteredField<T> {
@@ -34,7 +35,8 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
   public registerAction: (actionFn: (e: Event, data: T) => T) => (e: Event) => any;
 
   public routes: IRouteRegistry<T> = {};
-
+  private internalModelProps: T;
+  private deepCopyOfModelProps: T;
   private projector: Projector;
   private cache: CalculationCache<T>;
   private cachedNode: VNode = h("div#default");
@@ -47,18 +49,32 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    * @param  {U} actions A required instance of an actions class
    *  (which will be registered later with registerAction `App.actions.X = App.registerAction(fn)`)
    */
-  constructor(public modelProps: T, public actions: U) {
+  constructor(modelProps: T, public actions: U) {
     const context = this;
+    this.mutableProps = modelProps;
     this.projector = createProjector();
     this.cache = maquette.createCache<T>();
     this.registerAction = this.makeActionStately( function stateUpdater(props: T): void {
       context.render(props, false);
-    }, this.modelProps);
+    }, this.mutableProps);
     window.onpopstate = function(this: Window, evt: Event) {
       // console.log("PopState handler called", this.location.href);
-      context.render(context.modelProps);
+      context.render(context.mutableProps);
     };
   }
+
+  /**
+   * Get a deep copy of the current state. Not a reference to the actual internal state.
+   * @returns T
+   */
+  public get modelProps(): T {
+    return JSON.parse(JSON.stringify(this.deepCopyOfModelProps));
+  }
+
+  public set modelProps(v: T) {
+    throw new Error("You cannot update the internal state this way. Use an Action.");
+  }
+
   /**
    * The function used to render VNodes for insertion into the page DOM.
    * This method should be configured by calling FRETS.registerView(...)
@@ -90,7 +106,7 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
           this.allowAsyncRender = false;
           // console.log("loaded view code, scheduling render with new VNode");
           this.cachedNode = n;
-          this.render(this.modelProps);
+          this.render(this.mutableProps);
         });
       }
       return h(`div#${this.rootId}`, [this.cachedNode]);
@@ -105,7 +121,7 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
   public render = (props: T, recalculate: boolean = true) => {
     // console.log("Render: checking the cache");
     this.cache.result([JSON.stringify(props)], () => {
-      // console.log("Render: props have changed. ", JSON.stringify(this.modelProps));
+      // console.log("Render: props have changed. ", JSON.stringify(this.mutableProps));
       if (!this.stateIsMutated || recalculate) {
         this.mutate(props);
       }
@@ -121,7 +137,7 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    */
   public mountTo = (id: string) => {
     // console.log("Mount To");
-    this.mutate(this.modelProps);
+    this.mutate(this.mutableProps);
     this.projector.merge(document.getElementById(id), this.stateRenderer);
   }
   /**
@@ -154,7 +170,7 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    */
   public navToPath(path: string) {
     try {
-      window.history.pushState(this.modelProps, "", path);
+      window.history.pushState(this.mutableProps, "", path);
     } catch (error) {
       window.location.pathname = path;
     }
@@ -173,10 +189,10 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
         // since state has probably changed lets allow async rendering once
         // console.log("event handled: action " + actionFn.name + " event.target = " + (e.target as HTMLElement).id);
         this.allowAsyncRender = true;
-        const box = Object.assign({}, this.modelProps); // make a new copy of model data
+        const box = Object.assign({}, this.mutableProps); // make a new copy of model data (is this needed?)
         const newData = actionFn(e, box);
         this.mutate(newData);
-        presenterFn(this.modelProps);
+        presenterFn(this.mutableProps);
       };
     };
   }
@@ -189,9 +205,12 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    * @returns IRegisteredField
    */
   public registerField<S>(key: string, initialValue?: S): IRegisteredField<S> {
-    if (!this.modelProps.registeredFieldsValues[key]) {
-      this.modelProps.registeredFieldsValues[key] = initialValue || "";
-      this.modelProps.registeredFieldValidationErrors[key] = [];
+    if (!this.mutableProps.registeredFieldsValues[key]) {
+      const props = this.mutableProps;
+      props.registeredFieldsValues[key] = initialValue || "";
+      props.registeredFieldValidationErrors[key] = [];
+      this.mutableProps = props;
+
     }
     if (!this.actions.registeredFieldActions[key]) {
       this.actions.registeredFieldActions[key] = this.registerAction((evt: Event, data: T) => {
@@ -213,8 +232,8 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
   public getField<S>(key: string): IRegisteredField<S> {
     return {
       handler: this.actions.registeredFieldActions[key],
-      validationErrors: this.modelProps.registeredFieldValidationErrors[key],
-      value: this.modelProps.registeredFieldsValues[key],
+      validationErrors: this.mutableProps.registeredFieldValidationErrors[key],
+      value: this.mutableProps.registeredFieldsValues[key],
     };
   }
   /**
@@ -255,6 +274,16 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    */
   public calculator: (newProps: T, oldProps: T) => T = (p, o) => p;
 
+  private get mutableProps(): T {
+    return this.internalModelProps;
+  }
+
+  private set mutableProps(v: T) {
+    // console.log("Setting mutable props", v);
+    this.internalModelProps = v;
+    this.deepCopyOfModelProps = v;
+  }
+
   /**
    * The one and only place that this application model state is updated, first it runs the validation method,
    * then it runs any route functions, and finally runs the real state calculation method.
@@ -262,16 +291,16 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    */
   private mutate(props: T) {
     let isValid = true;
-    let data = Object.assign({}, props);
+    let data = props;
     this.stateIsMutated = true;
-    [data, isValid] = this.validator(data, this.modelProps);
+    [data, isValid] = this.validator(data, this.mutableProps);
     if (!isValid) {
-      this.modelProps = data;
+      this.mutableProps = data;
       return;
     }
     data = this.applyRouteFunction(data);
-    data = this.calculator(data, this.modelProps);
-    this.modelProps = data;
+    data = this.calculator(data, this.mutableProps);
+    this.mutableProps = data;
   }
   /**
    * Checks to see if any of the registerd routes are matched and then updates the app state using
@@ -280,7 +309,7 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    * @returns T
    */
   private applyRouteFunction(props: T): T {
-    let data = Object.assign({}, props);
+    let data = Object.assign({}, props); // is this necessary?
     for (const key in this.routes) {
       if (this.routes.hasOwnProperty(key)) {
         const entry = this.routes[key];

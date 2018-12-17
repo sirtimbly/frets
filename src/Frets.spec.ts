@@ -200,3 +200,24 @@ test("registers a route and changes when navigating", (t) => {
   window.dispatchEvent(new Event("popstate"));
   t.is(proj.query("h1").textContent, "Home Page");
 });
+
+test("model props can only be updated through an action", (t) => {
+  const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
+  F.registerView((app): VNode => {
+    // try overwriting something in modelProps
+
+    app.modelProps.messages.push("try");
+
+    return h("div", [
+      (!app.modelProps.activeScreen || app.modelProps.activeScreen === SimpleScreens.Home)
+        ? h("h1", ["Home Page"])
+        : h("h1", ["About Page"]),
+      h("ul", app.modelProps.messages.map((x: string) => h("li", [x]))),
+    ]);
+  });
+  t.not(F.modelProps.messages[0], "try");
+  const proj = createTestProjector(F.stateRenderer);
+  const msgs = proj.query("ul>li");
+  t.falsy(msgs.exists());
+  t.not(F.modelProps.messages[0], "try");
+});

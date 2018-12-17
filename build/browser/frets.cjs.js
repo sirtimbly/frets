@@ -1346,7 +1346,6 @@ class FRETS {
      *  (which will be registered later with registerAction `App.actions.X = App.registerAction(fn)`)
      */
     constructor(modelProps, actions) {
-        this.modelProps = modelProps;
         this.actions = actions;
         this.routes = {};
         this.cachedNode = h("div#default");
@@ -1381,7 +1380,7 @@ class FRETS {
                         this.allowAsyncRender = false;
                         // console.log("loaded view code, scheduling render with new VNode");
                         this.cachedNode = n;
-                        this.render(this.modelProps);
+                        this.render(this.mutableProps);
                     });
                 }
                 return h(`div#${this.rootId}`, [this.cachedNode]);
@@ -1395,7 +1394,7 @@ class FRETS {
         this.render = (props, recalculate = true) => {
             // console.log("Render: checking the cache");
             this.cache.result([JSON.stringify(props)], () => {
-                // console.log("Render: props have changed. ", JSON.stringify(this.modelProps));
+                // console.log("Render: props have changed. ", JSON.stringify(this.mutableProps));
                 if (!this.stateIsMutated || recalculate) {
                     this.mutate(props);
                 }
@@ -1410,7 +1409,7 @@ class FRETS {
          */
         this.mountTo = (id) => {
             // console.log("Mount To");
-            this.mutate(this.modelProps);
+            this.mutate(this.mutableProps);
             this.projector.merge(document.getElementById(id), this.stateRenderer);
         };
         /**
@@ -1426,10 +1425,10 @@ class FRETS {
                     // since state has probably changed lets allow async rendering once
                     // console.log("event handled: action " + actionFn.name + " event.target = " + (e.target as HTMLElement).id);
                     this.allowAsyncRender = true;
-                    const box = Object.assign({}, this.modelProps); // make a new copy of model data
+                    const box = Object.assign({}, this.mutableProps); // make a new copy of model data (is this needed?)
                     const newData = actionFn(e, box);
                     this.mutate(newData);
-                    presenterFn(this.modelProps);
+                    presenterFn(this.mutableProps);
                 };
             };
         };
@@ -1452,15 +1451,26 @@ class FRETS {
          */
         this.calculator = (p, o) => p;
         const context = this;
+        this.mutableProps = modelProps;
         this.projector = createProjector();
         this.cache = createCache();
         this.registerAction = this.makeActionStately(function stateUpdater(props) {
             context.render(props, false);
-        }, this.modelProps);
+        }, this.mutableProps);
         window.onpopstate = function (evt) {
             // console.log("PopState handler called", this.location.href);
-            context.render(context.modelProps);
+            context.render(context.mutableProps);
         };
+    }
+    /**
+     * Get a deep copy of the current state. Not a reference to the actual internal state.
+     * @returns T
+     */
+    get modelProps() {
+        return JSON.parse(JSON.stringify(this.deepCopyOfModelProps));
+    }
+    set modelProps(v) {
+        throw new Error("You cannot update the internal state this way. Use an Action.");
     }
     /**
      * Returns a path when given the key of a route that was previously registered.
@@ -1492,7 +1502,7 @@ class FRETS {
      */
     navToPath(path) {
         try {
-            window.history.pushState(this.modelProps, "", path);
+            window.history.pushState(this.mutableProps, "", path);
         }
         catch (error) {
             window.location.pathname = path;
@@ -1507,9 +1517,11 @@ class FRETS {
      * @returns IRegisteredField
      */
     registerField(key, initialValue) {
-        if (!this.modelProps.registeredFieldsValues[key]) {
-            this.modelProps.registeredFieldsValues[key] = initialValue || "";
-            this.modelProps.registeredFieldValidationErrors[key] = [];
+        if (!this.mutableProps.registeredFieldsValues[key]) {
+            const props = this.mutableProps;
+            props.registeredFieldsValues[key] = initialValue || "";
+            props.registeredFieldValidationErrors[key] = [];
+            this.mutableProps = props;
         }
         if (!this.actions.registeredFieldActions[key]) {
             this.actions.registeredFieldActions[key] = this.registerAction((evt, data) => {
@@ -1529,8 +1541,8 @@ class FRETS {
     getField(key) {
         return {
             handler: this.actions.registeredFieldActions[key],
-            validationErrors: this.modelProps.registeredFieldValidationErrors[key],
-            value: this.modelProps.registeredFieldsValues[key],
+            validationErrors: this.mutableProps.registeredFieldValidationErrors[key],
+            value: this.mutableProps.registeredFieldsValues[key],
         };
     }
     /**
@@ -1549,6 +1561,14 @@ class FRETS {
             spec: new Path(path),
         };
     }
+    get mutableProps() {
+        return this.internalModelProps;
+    }
+    set mutableProps(v) {
+        // console.log("Setting mutable props", v);
+        this.internalModelProps = v;
+        this.deepCopyOfModelProps = v;
+    }
     /**
      * The one and only place that this application model state is updated, first it runs the validation method,
      * then it runs any route functions, and finally runs the real state calculation method.
@@ -1556,16 +1576,16 @@ class FRETS {
      */
     mutate(props) {
         let isValid = true;
-        let data = Object.assign({}, props);
+        let data = props;
         this.stateIsMutated = true;
-        [data, isValid] = this.validator(data, this.modelProps);
+        [data, isValid] = this.validator(data, this.mutableProps);
         if (!isValid) {
-            this.modelProps = data;
+            this.mutableProps = data;
             return;
         }
         data = this.applyRouteFunction(data);
-        data = this.calculator(data, this.modelProps);
-        this.modelProps = data;
+        data = this.calculator(data, this.mutableProps);
+        this.mutableProps = data;
     }
     /**
      * Checks to see if any of the registerd routes are matched and then updates the app state using
@@ -1574,7 +1594,7 @@ class FRETS {
      * @returns T
      */
     applyRouteFunction(props) {
-        let data = Object.assign({}, props);
+        let data = Object.assign({}, props); // is this necessary?
         for (const key in this.routes) {
             if (this.routes.hasOwnProperty(key)) {
                 const entry = this.routes[key];
