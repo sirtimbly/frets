@@ -31,6 +31,9 @@
     "docs:html": "typedoc src/index.ts --excludePrivate --mode file --theme minimal --out public/docs",
     "docs:json": "typedoc --mode file --json public/docs/typedoc.json src/index.ts",
     "docs:publish": "npm run docs:html && gh-pages -d public/docs",
+    "docs:dev": "vuepress dev docs",
+    "docs:build": "vuepress build docs",
+    "changelog": "standard-version",
     "changelog": "npx semantic-release",
     "release": "npm run reset && npm run test && npm run docs && npm run changelog",
     "reset": "git clean -dfx && git reset --hard && npm i",
@@ -85,7 +88,8 @@
     "tslint": "^5.11.0",
     "tslint-config-standard": "^8.0.1",
     "typedoc": "^0.13.0",
-    "typescript": "^3.2.2"
+    "typescript": "^3.2.2",
+    "vuepress": "^0.14.8"
   },
   "keywords": [
     "framework",
