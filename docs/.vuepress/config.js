@@ -5,7 +5,7 @@ module.exports = {
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Guide', link: '/guide/' },
-      { text: 'API Docs', link: 'https://github.com/sirtimbly/frets' },
+      { text: 'API Docs', link: 'https://sirtimbly.github.io/frets/' },
     ],
     sidebar: [
       '/',
