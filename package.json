@@ -114,6 +114,7 @@
   "dependencies": {
     "maquette": "3.3.2",
     "path-parser": "4.2.0",
-    "tslib": "1.9.3"
+    "tslib": "1.9.3",
+    "microstates": "0.12.4"
   }
 }
