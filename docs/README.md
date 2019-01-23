@@ -1,7 +1,7 @@
 ---
 home: true
 heroImage: http://uploads.timbendt.com.s3.amazonaws.com/dropzone/fretslogo4@1x.png
-heroText: Function Reactive (and) Entirely TypeScript
+heroText: Functional Reactive (and) Entirely TypeScript
 tagline: A Fast Minimal Virtual-dom Web SPA Framework with a Unique Syntax
 actionText: Get Started 🛠
 actionLink: /guide/
