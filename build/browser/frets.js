@@ -1512,7 +1512,7 @@ class FRETS {
      */
     navToPath(path) {
         try {
-            window.history.pushState(this.mutateProps, "", path);
+            window.history.pushState(this.modelProps, "", path);
         }
         catch (error) {
             window.location.pathname = path;

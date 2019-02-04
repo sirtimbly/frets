@@ -166,7 +166,7 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
    */
   public navToPath(path: string) {
     try {
-      window.history.pushState(this.mutateProps, "", path);
+      window.history.pushState(this.modelProps, "", path);
     } catch (error) {
       window.location.pathname = path;
     }
