@@ -119,6 +119,7 @@
     ]
   },
   "dependencies": {
+    "lodash.throttle": "4.1.1",
     "maquette": "3.3.2",
     "path-parser": "4.2.0",
     "tslib": "1.9.3"

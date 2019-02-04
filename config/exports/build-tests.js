@@ -31,9 +31,9 @@ const watchMode = process.argv.indexOf('-w') !== -1 ? true : false;
 const browserTests = process.argv.indexOf('--no-browser') !== -1 ? true : false;
 const task = watchMode ? cpx.watch : cpx.copy;
 
-task(testsFromRoot, 'test/main', {
-  transform: (filePath) => makeTransform(filePath, pkg.main)
-});
+// task(testsFromRoot, 'test/main', {
+//   transform: (filePath) => makeTransform(filePath, pkg.main)
+// });
 if (!browserTests) {
   task(testsFromRoot, 'test/browser', {
     transform: (filePath) => makeTransform(filePath, pkg.browser.replace('.js', '.cjs.js'))

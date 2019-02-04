@@ -5,9 +5,9 @@ import alias from 'rollup-plugin-alias';
 import { terser } from 'rollup-plugin-terser';
 
 const substituteModulePaths = {
-    'crypto': 'build/module/adapters/crypto.browser.js',
     'maquette': 'node_modules/maquette/dist/index.js',
-    'hash.js': 'build/temp/hash.js'
+    '../node_modules/lodash.throttle': 'node_modules/lodash.throttle/index.js',
+    '../node_modules/lodash.memoize': 'node_modules/lodash.memoize/index.js'
 }
 
 export default {

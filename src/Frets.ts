@@ -5,6 +5,10 @@ import { ActionsWithFields } from "./ActionsFieldRegistry";
 import deepFreeze from "./Freeze";
 import { PropsWithFields } from "./PropsFieldRegistry";
 
+// import {memoize, throttle} from "lodash-es";
+// import memoize from "../node_modules/lodash.memoize";
+import throttle from "lodash.throttle";
+
 export interface IRegisteredField<T> {
   handler: (evt: Event) => void | boolean;
   validationErrors: string[];
@@ -181,14 +185,13 @@ export class FRETS<T extends PropsWithFields, U extends ActionsWithFields> {
   public makeActionStately = (presenterFn: (props: T) => void, data: T) => {
     // this function will return functions that can be used as actions in a view
     return (actionFn: (e: Event, data: T) => T) => {
-      return (e: Event) => {
+      return throttle((e: Event) => {
         // since state has probably changed lets allow async rendering once
-        // console.log("event handled: action " + actionFn.name + " event.target = " + (e.target as HTMLElement).id);
         this.allowAsyncRender = true;
         const newData = actionFn(e, this.modelProps);
         this.mutate(newData);
         presenterFn(this.modelProps);
-      };
+      }, 16);
     };
   }
   /**

@@ -102,7 +102,7 @@ export declare class FRETS<T extends PropsWithFields, U extends ActionsWithField
      * @param  {(props:T)=>void} presenterFn A reference to the main FRETS render function for this instance.
      * @param  {T} data
      */
-    makeActionStately: (presenterFn: (props: T) => void, data: T) => (actionFn: (e: Event, data: T) => T) => (e: Event) => void;
+    makeActionStately: (presenterFn: (props: T) => void, data: T) => (actionFn: (e: Event, data: T) => T) => any;
     /**
      * Registers simple form fields on the property model, and on the actions to update it. If the field key hasn't been
      * registered yet, it initializes that value on the properties with the value passed in. This makes it so that UI
