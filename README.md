@@ -9,8 +9,8 @@
   <a href="https://codecov.io/gh/sirtimbly/frets">
     <img src="https://codecov.io/gh/sirtimbly/frets/branch/master/graph/badge.svg" />
   </a>
-  <a href="https://raw.githubusercontent.com/sirtimbly/frets/master/build/browser/frets.min.js">
-    <img src="https://img.badgesize.io/sirtimbly/frets/master/build/browser/frets.min.js.svg?compression=gzip&label=minzipped%20size&max=9000&softmax=7000">
+  <a href="https://bundlephobia.com/result?p=frets">
+    <img src="https://badgen.net/bundlephobia/minzip/frets">
   </a>
   <a href="https://packagephobia.now.sh/result?p=frets">
     <img id="" src="https://packagephobia.now.sh/badge?p=frets" alt="install size" class="">
