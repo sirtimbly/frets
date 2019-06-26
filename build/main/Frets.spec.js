@@ -1,17 +1,7 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const ava_1 = require("ava");
 const frets_1 = require("frets");
-const maquette_1 = require("maquette");
-const maquette_query_1 = require("maquette-query");
 var SimpleScreens;
 (function (SimpleScreens) {
     SimpleScreens[SimpleScreens["Start"] = 0] = "Start";
@@ -26,182 +16,186 @@ class SimpleProps extends frets_1.PropsWithFields {
         this.checkValue = 0;
     }
 }
-// tslint:disable-next-line:max-classes-per-file
-class SimpleActions extends frets_1.ActionsWithFields {
-}
 ava_1.default("FRETS initializes with simple types", (t) => {
-    const F = new frets_1.FRETS(new SimpleProps(), new SimpleActions());
-    t.truthy(F.render);
+    const app = frets_1.setup(new SimpleProps(), (f) => {
+        t.truthy(f.modelProps);
+        t.truthy(f.modelProps.messages);
+    });
+    t.truthy(app.mountTo);
 });
-ava_1.default("renders default div", (t) => {
-    const F = new frets_1.FRETS(new SimpleProps(), new SimpleActions());
-    const proj = maquette_query_1.createTestProjector(F.stateRenderer);
-    t.true(proj.query("div#default").exists());
-});
-ava_1.default("actions change state", (t) => {
-    const F = new frets_1.FRETS(new SimpleProps(), new SimpleActions());
-    F.actions.changeState = F.registerAction((e, props) => {
-        return Object.assign({}, props, { messages: ["test"] });
-    });
-    F.registerView((app) => {
-        return maquette_1.h("div", [
-            maquette_1.h("button", { onclick: app.actions.changeState }, ["Load Messages"]),
-            maquette_1.h("ul", app.modelProps.messages.map((x) => maquette_1.h("li", [x.toString()]))),
-        ]);
-    });
-    const proj = maquette_query_1.createTestProjector(F.stateRenderer);
-    const list = proj.query("ul");
-    t.falsy(list.children.length);
-    const button = proj.query("button");
-    t.truthy(button.exists);
-    button.simulate.click();
-    t.truthy(list.children.length);
-    t.falsy(list.children[0].children);
-    t.is(list.children[0].text, "test");
-});
-ava_1.default("change state but validator stops mutation", (t) => {
-    const F = new frets_1.FRETS(new SimpleProps(), new SimpleActions());
-    F.validator = (newProps, oldProps) => {
-        if (newProps.checkValue < 0) {
-            return [Object.assign({}, newProps, { messages: ["Invalid"] }), false];
-        }
-        return [newProps, true];
-    };
-    F.actions.setValid = F.registerAction((e, props) => {
-        return Object.assign({}, props, { checkValue: 1 });
-    });
-    F.actions.setInvalid = F.registerAction((e, props) => {
-        return Object.assign({}, props, { checkValue: -1 });
-    });
-    F.registerView((app) => {
-        return maquette_1.h("div", [
-            maquette_1.h("button#valid", { onclick: app.actions.setValid }, ["Set to 1"]),
-            maquette_1.h("button#invalid", { onclick: app.actions.setInvalid }, ["Set to -1"]),
-            maquette_1.h("ul", app.modelProps.messages.map((x) => maquette_1.h("li", [x.toString()]))),
-        ]);
-    });
-    const proj = maquette_query_1.createTestProjector(F.stateRenderer);
-    const list = proj.query("ul");
-    t.falsy(list.children.length);
-    const button1 = proj.query("button#valid");
-    const button2 = proj.query("button#invalid");
-    button1.simulate.click();
-    t.falsy(list.children.length);
-    button2.simulate.click();
-    t.is(list.children[0].text, "Invalid");
-});
-ava_1.default("state updates async", (t) => {
-    const F = new frets_1.FRETS(new SimpleProps(), new SimpleActions());
-    F.actions.changeState = F.registerAction((e, data) => {
-        setTimeout(() => {
-            F.render(Object.assign({}, data, { messages: ["async"] }));
-        }, 50);
-        return data;
-    });
-    F.registerView((app) => {
-        return maquette_1.h("div", [
-            maquette_1.h("button", { onclick: app.actions.changeState }, ["Load Messages"]),
-            maquette_1.h("ul", app.modelProps.messages.map((x) => maquette_1.h("li", [x.toString()]))),
-        ]);
-    });
-    const proj = maquette_query_1.createTestProjector(F.stateRenderer);
-    const list = proj.query("ul");
-    t.falsy(list.children.length);
-    proj.query("button").simulate.click();
-    setTimeout(() => {
-        const list2 = proj.query("ul");
-        t.truthy(list2.children.length);
-        t.is(list2.children[0].text, "async");
-    }, 100);
-});
-ava_1.default("registers a field", (t) => {
-    const F = new frets_1.FRETS(new SimpleProps(), new SimpleActions());
-    F.registerField("test", "0");
-    t.is(F.modelProps.registeredFieldsValues["test"], "0");
-    const field = F.getField("test");
-    t.is(field.value, "0");
-});
-ava_1.default("registers and updates a field", (t) => {
-    const F = new frets_1.FRETS(new SimpleProps(), new SimpleActions());
-    F.registerField("test", "0");
-    t.is(F.modelProps.registeredFieldsValues["test"], "0");
-    F.registerView((app) => {
-        const field = app.getField("test");
-        return maquette_1.h("div", [
-            maquette_1.h("button", { onclick: app.actions.changeState }, ["Load Messages"]),
-            maquette_1.h("input", { type: "text", onchange: field.handler, value: field.value.toString() }, []),
-            maquette_1.h("div.output", [field.value]),
-        ]);
-    });
-    const proj = maquette_query_1.createTestProjector(F.stateRenderer);
-    const input = proj.query("input");
-    t.truthy(input.exists);
-    input.simulate.change({ value: "2" });
-    t.truthy(F.getField("test").value === "2");
-    proj.initialize(F.stateRenderer);
-    t.is(proj.query(".output").textContent, "2");
-});
-ava_1.default("register view async", (t) => {
-    const F = new frets_1.FRETS(new SimpleProps(), new SimpleActions());
-    function asyncViewFunction(app) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return new Promise((resolve, reject) => {
-                // simulate view rendering code being loaded async like from a webpack chunk
-                setTimeout(() => {
-                    resolve(maquette_1.h("div", [
-                        maquette_1.h("ul", app.modelProps.messages.map((x) => maquette_1.h("li", [x.toString()]))),
-                    ]));
-                }, 50);
-            });
-        });
-    }
-    F.registerViewAsync(asyncViewFunction);
-    const proj = maquette_query_1.createTestProjector(F.stateRenderer);
-    const list = proj.query("ul");
-    t.truthy(list.exists);
-});
-ava_1.default("registers a route and changes when navigating", (t) => {
-    const F = new frets_1.FRETS(new SimpleProps(), new SimpleActions());
-    F.registerView((app) => {
-        return maquette_1.h("div", [
-            (!app.modelProps.activeScreen || app.modelProps.activeScreen === SimpleScreens.Home)
-                ? maquette_1.h("h1", ["Home Page"])
-                : maquette_1.h("h1", ["About Page"]),
-        ]);
-    });
-    F.registerRoute("home", "/home", (name, params, props) => {
-        return Object.assign({}, props, { activeScreen: SimpleScreens.Home });
-    });
-    F.registerRoute("about", "/about", (name, params, props) => {
-        return Object.assign({}, props, { activeScreen: SimpleScreens.About });
-    });
-    t.is(F.getRouteLink("about"), "/about");
-    t.false(F.getRouteLink("xyz"));
-    const proj = maquette_query_1.createTestProjector(F.stateRenderer);
-    t.is(proj.query("h1").textContent, "Home Page");
-    F.navToPath("/about");
-    window.dispatchEvent(new Event("popstate"));
-    t.is(proj.query("h1").textContent, "About Page");
-    F.navToRoute("home");
-    window.dispatchEvent(new Event("popstate"));
-    t.is(proj.query("h1").textContent, "Home Page");
-});
-ava_1.default("model props can only be updated through an action", (t) => {
-    const F = new frets_1.FRETS(new SimpleProps(), new SimpleActions());
-    F.registerView((app) => {
-        // try overwriting something in modelProps
-        t.throws(() => app.modelProps.messages.push("try"));
-        return maquette_1.h("div", [
-            (!app.modelProps.activeScreen || app.modelProps.activeScreen === SimpleScreens.Home)
-                ? maquette_1.h("h1", ["Home Page"])
-                : maquette_1.h("h1", ["About Page"]),
-            maquette_1.h("ul", app.modelProps.messages.map((x) => maquette_1.h("li", [x]))),
-        ]);
-    });
-    t.not(F.modelProps.messages[0], "try");
-    const proj = maquette_query_1.createTestProjector(F.stateRenderer);
-    const msgs = proj.query("ul>li");
-    t.falsy(msgs.exists());
-    t.not(F.modelProps.messages[0], "try");
-});
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiRnJldHMuc3BlYy5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbIi4uLy4uL3NyYy9GcmV0cy5zcGVjLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7QUFBQSw2QkFBdUI7QUFDdkIsaUNBQStFO0FBQy9FLHVDQUFvQztBQUNwQyxtREFBcUQ7QUFFckQsSUFBSyxhQUtKO0FBTEQsV0FBSyxhQUFhO0lBQ2hCLG1EQUFLLENBQUE7SUFDTCwrQ0FBRyxDQUFBO0lBQ0gsaURBQUksQ0FBQTtJQUNKLG1EQUFLLENBQUE7QUFDUCxDQUFDLEVBTEksYUFBYSxLQUFiLGFBQWEsUUFLakI7QUFFRCxNQUFNLFdBQVksU0FBUSx1QkFBZTtJQUF6Qzs7UUFDUyxhQUFRLEdBQWEsRUFBRSxDQUFDO1FBR3hCLGVBQVUsR0FBVyxDQUFDLENBQUM7SUFDaEMsQ0FBQztDQUFBO0FBSUQsZ0RBQWdEO0FBQ2hELE1BQU0sYUFBYyxTQUFRLHlCQUFpQjtDQUk1QztBQUVELGFBQUksQ0FBQyxxQ0FBcUMsRUFBRSxDQUFDLENBQUMsRUFBRSxFQUFFO0lBQy9DLE1BQU0sQ0FBQyxHQUFHLElBQUksYUFBSyxDQUE2QixJQUFJLFdBQVcsRUFBRSxFQUFFLElBQUksYUFBYSxFQUFFLENBQUMsQ0FBQztJQUN4RixDQUFDLENBQUMsTUFBTSxDQUFDLENBQUMsQ0FBQyxNQUFNLENBQUMsQ0FBQztBQUN0QixDQUFDLENBQUMsQ0FBQztBQUVILGFBQUksQ0FBQyxxQkFBcUIsRUFBRSxDQUFDLENBQUMsRUFBRSxFQUFFO0lBQ2hDLE1BQU0sQ0FBQyxHQUFHLElBQUksYUFBSyxDQUE2QixJQUFJLFdBQVcsRUFBRSxFQUFFLElBQUksYUFBYSxFQUFFLENBQUMsQ0FBQztJQUN4RixNQUFNLElBQUksR0FBRyxvQ0FBbUIsQ0FBQyxDQUFDLENBQUMsYUFBYSxDQUFDLENBQUM7SUFDbEQsQ0FBQyxDQUFDLElBQUksQ0FBQyxJQUFJLENBQUMsS0FBSyxDQUFDLGFBQWEsQ0FBQyxDQUFD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
+// test("renders default div", (t) => {
+// });
+// test("actions change state", (t) => {
+//   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
+//   F.actions.changeState = F.registerAction((e: Event, props: Readonly<SimpleProps>) => {
+//     return {...props, messages: ["test"]};
+//   });
+//   F.registerView((app: main): VNode => {
+//     return h("div", [
+//       h("button", { onclick: app.actions.changeState }, ["Load Messages"]),
+//       h("ul", app.modelProps.messages.map((x) => h("li", [x.toString()]))),
+//     ]);
+//   });
+//   const proj = createTestProjector(F.stateRenderer);
+//   const list = proj.query("ul");
+//   t.falsy(list.children.length);
+//   const button = proj.query("button");
+//   t.truthy(button.exists);
+//   button.simulate.click();
+//   t.truthy(list.children.length);
+//   t.falsy(list.children[0].children);
+//   t.is(list.children[0].text, "test");
+// });
+// test("change state but validator stops mutation", (t) => {
+//   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
+//   F.validator = (newProps: SimpleProps, oldProps: SimpleProps): [SimpleProps, boolean] => {
+//     if (newProps.checkValue < 0) {
+//       return [{...newProps, messages: ["Invalid"]}, false];
+//     }
+//     return [newProps, true];
+//   };
+//   F.actions.setValid = F.registerAction((e: Event, props: SimpleProps): SimpleProps => {
+//     return {...props, checkValue: 1};
+//   });
+//   F.actions.setInvalid = F.registerAction((e: Event, props: SimpleProps): SimpleProps => {
+//     return {...props, checkValue: -1} ;
+//   });
+//   F.registerView((app: main): VNode => {
+//     return h("div", [
+//       h("button#valid", { onclick: app.actions.setValid }, ["Set to 1"]),
+//       h("button#invalid", { onclick: app.actions.setInvalid }, ["Set to -1"]),
+//       h("ul", app.modelProps.messages.map((x) => h("li", [x.toString()]))),
+//     ]);
+//   });
+//   const proj = createTestProjector(F.stateRenderer);
+//   const list = proj.query("ul");
+//   t.falsy(list.children.length);
+//   const button1 = proj.query("button#valid");
+//   const button2 = proj.query("button#invalid");
+//   button1.simulate.click();
+//   t.falsy(list.children.length);
+//   button2.simulate.click();
+//   t.is(list.children[0].text, "Invalid");
+// });
+// test("state updates async", (t) => {
+//   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
+//   F.actions.changeState = F.registerAction((e: Event, data: Readonly<SimpleProps>): SimpleProps => {
+//     setTimeout(() => {
+//       F.render({
+//         ...data,
+//         messages: ["async"],
+//       });
+//     }, 50);
+//     return data;
+//   });
+//   F.registerView((app: main): VNode => {
+//     return h("div", [
+//       h("button", { onclick: app.actions.changeState }, ["Load Messages"]),
+//       h("ul", app.modelProps.messages.map((x) => h("li", [x.toString()]))),
+//     ]);
+//   });
+//   const proj = createTestProjector(F.stateRenderer);
+//   const list = proj.query("ul");
+//   t.falsy(list.children.length);
+//   proj.query("button").simulate.click();
+//   setTimeout(() => {
+//     const list2 = proj.query("ul");
+//     t.truthy(list2.children.length);
+//     t.is(list2.children[0].text, "async");
+//   }, 100);
+// });
+// test("registers a field", (t) => {
+//   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
+//   F.registerField("test", "0");
+//   t.is(F.modelProps.registeredFieldsValues["test"], "0");
+//   const field = F.getField("test");
+//   t.is(field.value, "0");
+// });
+// test("registers and updates a field", (t) => {
+//   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
+//   F.registerField("test", "0");
+//   t.is(F.modelProps.registeredFieldsValues["test"], "0");
+//   F.registerView((app: main): VNode => {
+//     const field = app.getField("test");
+//     return h("div", [
+//       h("button", { onclick: app.actions.changeState }, ["Load Messages"]),
+//       h("input", {type: "text", onchange: field.handler, value: field.value.toString()}, []),
+//       h("div.output", [field.value]),
+//     ]);
+//   });
+//   const proj = createTestProjector(F.stateRenderer);
+//   const input = proj.query("input");
+//   t.truthy(input.exists);
+//   input.simulate.change({ value: "2"});
+//   t.truthy(F.getField("test").value === "2");
+//   proj.initialize(F.stateRenderer);
+//   t.is(proj.query(".output").textContent, "2");
+// });
+// test("register view async", (t) => {
+//   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
+//   async function asyncViewFunction(app: main): Promise<VNode> {
+//     return new Promise<VNode>((resolve, reject) => {
+//       // simulate view rendering code being loaded async like from a webpack chunk
+//       setTimeout(() => {
+//         resolve(h("div", [
+//           h("ul", app.modelProps.messages.map((x) => h("li", [x.toString()]))),
+//         ]));
+//       }, 50);
+//     });
+//   }
+//   F.registerViewAsync(asyncViewFunction);
+//   const proj = createTestProjector(F.stateRenderer);
+//   const list = proj.query("ul");
+//   t.truthy(list.exists);
+// });
+// test("registers a route and changes when navigating", (t) => {
+//   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
+//   F.registerView((app): VNode => {
+//     return h("div", [
+//       (!app.modelProps.activeScreen || app.modelProps.activeScreen === SimpleScreens.Home)
+//         ? h("h1", ["Home Page"])
+//         : h("h1", ["About Page"]),
+//     ]);
+//   });
+//   F.registerRoute("home", "/home", (name, params, props): SimpleProps => {
+//     return {
+//       ...props,
+//       activeScreen: SimpleScreens.Home,
+//     };
+//   });
+//   F.registerRoute("about", "/about", (name, params, props): SimpleProps => {
+//     return {
+//       ...props,
+//       activeScreen: SimpleScreens.About,
+//     };
+//   });
+//   t.is(F.getRouteLink("about"), "/about");
+//   t.false(F.getRouteLink("xyz"));
+//   const proj = createTestProjector(F.stateRenderer);
+//   t.is(proj.query("h1").textContent, "Home Page");
+//   F.navToPath("/about");
+//   window.dispatchEvent(new Event("popstate"));
+//   t.is(proj.query("h1").textContent, "About Page");
+//   F.navToRoute("home");
+//   window.dispatchEvent(new Event("popstate"));
+//   t.is(proj.query("h1").textContent, "Home Page");
+// });
+// test("model props can only be updated through an action", (t) => {
+//   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
+//   F.registerView((app): VNode => {
+//     // try overwriting something in modelProps
+//     t.throws(() => app.modelProps.messages.push("try"));
+//     return h("div", [
+//       (!app.modelProps.activeScreen || app.modelProps.activeScreen === SimpleScreens.Home)
+//         ? h("h1", ["Home Page"])
+//         : h("h1", ["About Page"]),
+//       h("ul", app.modelProps.messages.map((x: string) => h("li", [x]))),
+//     ]);
+//   });
+//   t.not(F.modelProps.messages[0], "try");
+//   const proj = createTestProjector(F.stateRenderer);
+//   const msgs = proj.query("ul>li");
+//   t.falsy(msgs.exists());
+//   t.not(F.modelProps.messages[0], "try");
+// });
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiRnJldHMuc3BlYy5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbIi4uLy4uL3NyYy9GcmV0cy5zcGVjLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7O0FBQUEsNkJBQXVCO0FBQ3ZCLGlDQUEwRjtBQUkxRixJQUFLLGFBS0o7QUFMRCxXQUFLLGFBQWE7SUFDaEIsbURBQUssQ0FBQTtJQUNMLCtDQUFHLENBQUE7SUFDSCxpREFBSSxDQUFBO0lBQ0osbURBQUssQ0FBQTtBQUNQLENBQUMsRUFMSSxhQUFhLEtBQWIsYUFBYSxRQUtqQjtBQUVELE1BQU0sV0FBWSxTQUFRLHVCQUFlO0lBQXpDOztRQUNTLGFBQVEsR0FBYSxFQUFFLENBQUM7UUFHeEIsZUFBVSxHQUFXLENBQUMsQ0FBQztJQUNoQyxDQUFDO0NBQUE7QUFJRCxhQUFJLENBQUMscUNBQXFDLEVBQUUsQ0FBQyxDQUFDLEVBQUUsRUFBRTtJQUMvQyxNQUFNLEdBQUcsR0FBRyxhQUFLLENBQWMsSUFBSSxXQUFXLEVBQUUsRUFBRSxDQUFDLENBQU8sRUFBRSxFQUFFO1FBQzNELENBQUMsQ0FBQyxNQUFNLENBQUMsQ0FBQyxDQUFDLFVBQVUsQ0FBQyxDQUFDO1FBQ3ZCLENBQUMsQ0FBQyxNQUFNLENBQUMsQ0FBQyxDQUFDLFVBQVUsQ0FBQyxRQUFRLENBQUMsQ0FBQztJQUNuQyxDQUFDLENBQUMsQ0FBQztJQUNILENBQUMsQ0FBQyxNQUFNLENBQUMsR0FBRyxDQUFDLE9BQU8sQ0FBQyxDQUFDO0FBQ3pCLENBQUMsQ0FBQyxDQUFDO0FBRUgsdUNBQXVDO0FBRXZDLE1BQU07QUFFTix3Q0FBd0M7QUFDeEMsNkZBQTZGO0FBQzdGLDJGQUEyRjtBQUMzRiw2Q0FBNkM7QUFDN0MsUUFBUTtBQUNSLDJDQUEyQztBQUMzQyx3QkFBd0I7QUFDeEIsOEVBQThFO0FBQzlFLDhFQUE4RTtBQUM5RSxVQUFVO0FBQ1YsUUFBUTtBQUNSLHVEQUF1RDtBQUN2RCxtQ0FBbUM7QUFDbkMsbUNBQW1DO0FBQ25DLHlDQUF5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
