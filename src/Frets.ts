@@ -31,7 +31,7 @@ export interface IActionsObj<V> { [k: string]: ActionFn<V>; }
 export type IPresent<T extends PropsWithFields> = (proposal: Partial<T>) => void;
 export type IActionEventHandler = (event: Event) => void;
 export type IActionFn<T extends PropsWithFields> = (event: Event, present: IPresent<T>) => void;
-export type IModelPresenter<T extends PropsWithFields> = (proposal, state: (props: T) => void) => void;
+export type IModelPresenter<T extends PropsWithFields> = (proposal: Partial<T>, state: (props: T) => void) => void;
 
 export interface IFunFrets<T extends PropsWithFields> {
   modelProps: T;
@@ -42,7 +42,10 @@ export interface IFunFrets<T extends PropsWithFields> {
   registerModel: (presenterFn: IModelPresenter<T>) => void;
 }
 
-export interface IMountable { mountTo: (id: string) => void; }
+export interface IMountable {
+  mountTo: (id: string) => void;
+  stateRenderer: () => VNode;
+}
 export interface ISetupOptions {
   projector: Projector;
 }
@@ -104,7 +107,7 @@ export function setup<T extends PropsWithFields>(
     stateRenderer = () => renderFn(F);
     state = (newProps: T) => {
       modelProps = newProps;
-      // projector.scheduleRender();
+      projector.scheduleRender();
     };
   }
 
@@ -147,5 +150,6 @@ export function setup<T extends PropsWithFields>(
     mountTo: (id: string) => {
       projector.merge(document.getElementById(id), stateRenderer);
     },
+    stateRenderer,
   };
 }
