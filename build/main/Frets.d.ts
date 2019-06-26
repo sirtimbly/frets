@@ -25,7 +25,7 @@ export interface IActionsObj<V> {
 export declare type IPresent<T extends PropsWithFields> = (proposal: Partial<T>) => void;
 export declare type IActionEventHandler = (event: Event) => void;
 export declare type IActionFn<T extends PropsWithFields> = (event: Event, present: IPresent<T>) => void;
-export declare type IModelPresenter<T extends PropsWithFields> = (proposal: any, state: (props: T) => void) => void;
+export declare type IModelPresenter<T extends PropsWithFields> = (proposal: Partial<T>, state: (props: T) => void) => void;
 export interface IFunFrets<T extends PropsWithFields> {
     modelProps: T;
     registerView: (renderFn: (app: IFunFrets<T>) => VNode) => void;
@@ -38,6 +38,7 @@ export interface IFunFrets<T extends PropsWithFields> {
 }
 export interface IMountable {
     mountTo: (id: string) => void;
+    stateRenderer: () => VNode;
 }
 export interface ISetupOptions {
     projector: Projector;

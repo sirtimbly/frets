@@ -1409,7 +1409,7 @@ function setup(modelProps, setupFn, opts) {
         stateRenderer = () => renderFn(F);
         state = (newProps) => {
             modelProps = newProps;
-            // projector.scheduleRender();
+            projector.scheduleRender();
         };
     }
     function registerField(key, initialValue, validation) {
@@ -1445,6 +1445,7 @@ function setup(modelProps, setupFn, opts) {
         mountTo: (id) => {
             projector.merge(document.getElementById(id), stateRenderer);
         },
+        stateRenderer,
     };
 }
 

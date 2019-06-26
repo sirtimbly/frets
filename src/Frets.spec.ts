@@ -31,60 +31,71 @@ test("FRETS initializes with simple types", (t) => {
 
 // });
 
-// test("actions change state", (t) => {
-//   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
-//   F.actions.changeState = F.registerAction((e: Event, props: Readonly<SimpleProps>) => {
-//     return {...props, messages: ["test"]};
-//   });
-//   F.registerView((app: main): VNode => {
-//     return h("div", [
-//       h("button", { onclick: app.actions.changeState }, ["Load Messages"]),
-//       h("ul", app.modelProps.messages.map((x) => h("li", [x.toString()]))),
-//     ]);
-//   });
-//   const proj = createTestProjector(F.stateRenderer);
-//   const list = proj.query("ul");
-//   t.falsy(list.children.length);
-//   const button = proj.query("button");
-//   t.truthy(button.exists);
-//   button.simulate.click();
-//   t.truthy(list.children.length);
-//   t.falsy(list.children[0].children);
-//   t.is(list.children[0].text, "test");
+test("actions change state", (t) => {
+  const app = setup<SimpleProps>(new SimpleProps(), (f) => {
+    f.registerModel((proposal, state) => {
+      if (proposal.messages) {
+        f.modelProps.messages = proposal.messages;
+      }
+      state(f.modelProps);
+    });
+    const changeState = f.registerAction("changeState", (e: Event, present) => {
+      present({ messages: ["test"] });
+    });
+    f.registerView((fretsApp: main): VNode => {
+      return h("div", [
+        h("button", { onclick: changeState }, ["Load Messages"]),
+        h("ul", fretsApp.modelProps.messages.map((x) => h("li", [x.toString()]))),
+      ]);
+    });
+  });
 
-// });
+  const proj = createTestProjector(app.stateRenderer);
+  const list = proj.query("ul");
+  t.falsy(list.children.length);
+  const button = proj.query("button");
+  t.truthy(button.exists);
+  button.simulate.click();
+  t.truthy(list.children.length);
+  t.falsy(list.children[0].children);
+  t.is(list.children[0].text, "test");
 
-// test("change state but validator stops mutation", (t) => {
-//   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
-//   F.validator = (newProps: SimpleProps, oldProps: SimpleProps): [SimpleProps, boolean] => {
-//     if (newProps.checkValue < 0) {
-//       return [{...newProps, messages: ["Invalid"]}, false];
-//     }
-//     return [newProps, true];
-//   };
-//   F.actions.setValid = F.registerAction((e: Event, props: SimpleProps): SimpleProps => {
-//     return {...props, checkValue: 1};
-//   });
-//   F.actions.setInvalid = F.registerAction((e: Event, props: SimpleProps): SimpleProps => {
-//     return {...props, checkValue: -1} ;
-//   });
-//   F.registerView((app: main): VNode => {
-//     return h("div", [
-//       h("button#valid", { onclick: app.actions.setValid }, ["Set to 1"]),
-//       h("button#invalid", { onclick: app.actions.setInvalid }, ["Set to -1"]),
-//       h("ul", app.modelProps.messages.map((x) => h("li", [x.toString()]))),
-//     ]);
-//   });
-//   const proj = createTestProjector(F.stateRenderer);
-//   const list = proj.query("ul");
-//   t.falsy(list.children.length);
-//   const button1 = proj.query("button#valid");
-//   const button2 = proj.query("button#invalid");
-//   button1.simulate.click();
-//   t.falsy(list.children.length);
-//   button2.simulate.click();
-//   t.is(list.children[0].text, "Invalid");
-// });
+});
+
+test("change state but validator stops mutation", (t) => {
+  const mainApp = setup<SimpleProps>(new SimpleProps(), (f) => {
+    f.registerModel((proposal, state) => {
+      if (proposal.checkValue < 0) {
+        f.modelProps.messages = ["Invalid"];
+      }
+      state(f.modelProps);
+    });
+
+    const setOne = f.registerAction("setOne", (e: Event, propose) => {
+      propose({ checkValue: 1});
+    });
+    const setNegOne = f.registerAction("setNegOne", (e: Event, propose) => {
+      propose({ checkValue: -1});
+    });
+
+    f.registerView((app: main): VNode => {
+      return h("div", [
+        h("button#valid", { onclick: setOne }, ["Set to 1"]),
+        h("button#invalid", { onclick: setNegOne }, ["Set to -1"]),
+        h("ul", app.modelProps.messages.map((x) => h("li", [x.toString()]))),
+      ]);
+    });
+  });
+  const proj = createTestProjector(mainApp.stateRenderer);
+  const list = proj.query("ul");
+  t.falsy(list.children.length);
+  const button1 = proj.query("button#valid");
+  const button2 = proj.query("button#invalid");
+  button1.simulate.click();
+  t.falsy(list.children.length);
+  button2.simulate.click();
+  t.is(list.children[0].text, "Invalid");
+});
 
 // test("state updates async", (t) => {
 //   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
