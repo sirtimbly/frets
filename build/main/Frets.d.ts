@@ -15,6 +15,11 @@ export interface IRouteRegistry<T> {
     };
 }
 declare type ActionFn<T> = (e: Event, data: Readonly<T>) => Partial<T>;
+declare type RouteActionFn<T extends PropsWithFields> = (context: {
+    key: string;
+    path: string;
+    data: any;
+}, present: IPresent<T>) => void;
 export interface IActionsObj<V> {
     [k: string]: ActionFn<V>;
 }
@@ -33,15 +38,19 @@ export interface IFunFrets<T extends PropsWithFields> {
         notEmpty?: boolean;
     }) => IRegisteredField<any>;
     registerAction: (key: string, actionFn: IActionFn<T>) => IActionEventHandler;
-    registerRouteAction: (key: string, path: string, actionFn: IActionFn<T>) => void;
+    registerRouteAction: (key: string, path: string, actionFn: RouteActionFn<T>) => void;
     registerModel: (presenterFn: IModelPresenter<T>) => void;
+    getRouteLink: (key: string, data?: any) => string | false;
+    navToRoute: (key: string, data?: any) => void;
+    navToPath: (key: string, data?: any) => void;
 }
-export interface IMountable {
+export interface IMountable<T extends PropsWithFields> {
+    fretsApp: IFunFrets<T>;
     mountTo: (id: string) => void;
     stateRenderer: () => VNode;
 }
 export interface ISetupOptions {
     projector: Projector;
 }
-export declare function setup<T extends PropsWithFields>(modelProps: T, setupFn: (fretsApp: IFunFrets<T>) => void, opts?: ISetupOptions): IMountable;
+export declare function setup<T extends PropsWithFields>(modelProps: T, setupFn: (fretsApp: IFunFrets<T>) => void, opts?: ISetupOptions): IMountable<T>;
 export {};

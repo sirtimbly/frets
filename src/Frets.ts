@@ -21,6 +21,14 @@ export interface IRouteRegistry<T> {
   };
 }
 type ActionFn<T> = (e: Event, data: Readonly<T>) => Partial<T>;
+type RouteActionFn<T extends PropsWithFields> = (
+  context: {
+    key: string,
+    path: string,
+    data: any,
+  },
+  present: IPresent<T>,
+) => void;
 
 export interface IActionsObj<V> { [k: string]: ActionFn<V>; }
 /**
@@ -38,11 +46,15 @@ export interface IFunFrets<T extends PropsWithFields> {
   registerView: (renderFn: (app: IFunFrets<T>) => VNode) => void;
   registerField: (key: string, defaultValue: any, validation?: {notEmpty?: boolean}) => IRegisteredField<any>;
   registerAction: (key: string, actionFn: IActionFn<T> ) => IActionEventHandler;
-  registerRouteAction: (key: string, path: string, actionFn: IActionFn<T> ) => void;
+  registerRouteAction: (key: string, path: string, actionFn: RouteActionFn<T> ) => void;
   registerModel: (presenterFn: IModelPresenter<T>) => void;
+  getRouteLink: (key: string, data?: any) => string | false;
+  navToRoute: (key: string, data?: any) => void;
+  navToPath: (key: string, data?: any) => void;
 }
 
-export interface IMountable {
+export interface IMountable<T extends PropsWithFields> {
+  fretsApp: IFunFrets<T>;
   mountTo: (id: string) => void;
   stateRenderer: () => VNode;
 }
@@ -51,7 +63,7 @@ export interface ISetupOptions {
 }
 
 export function setup<T extends PropsWithFields>(
-  modelProps: T, setupFn: (fretsApp: IFunFrets<T>) => void, opts?: ISetupOptions): IMountable {
+  modelProps: T, setupFn: (fretsApp: IFunFrets<T>) => void, opts?: ISetupOptions): IMountable<T> {
 
   const projector = createProjector();
 
@@ -61,7 +73,7 @@ export function setup<T extends PropsWithFields>(
 
   const routes: {
     [key: string]: {
-      calculator: IActionFn<T>,
+      calculator: RouteActionFn<T>,
       spec: Path,
     };
   } = {};
@@ -70,16 +82,44 @@ export function setup<T extends PropsWithFields>(
     [key: string]: IActionEventHandler;
   } = {};
 
+  /**
+   * Returns a path when given the key of a route that was previously registered.
+   * @param  {string} key
+   * @param  {any} data? A route data object
+   * @returns string
+   */
+  function getRouteLink(key: string, data ?: any): string | false {
+    if (!routes || !routes[key]) {
+      return false;
+    }
+    return routes[key].spec.build(data || {});
+  }
+  /**
+   * Change the browser location to match the path configured in the route with the
+   * provided key. You still need to call an action to udpate state before the UI will re-render.
+   * @param  {string} key
+   * @param  {any} data?
+   */
+  function navToRoute(key: string, data ?: any) {
+    const r = getRouteLink(key, data);
+    if (r) {
+      navToPath(r);
+    }
+  }
+  /**
+   * Update the browser location with the provided raw string path.
+   * @param  {string} path
+   */
+  function navToPath(path: string) {
+    try {
+      window.history.pushState(modelProps, "", path);
+    } catch (error) {
+      window.location.pathname = path;
+    }
+  }
+
   let modelPresenter: IPresent<T>;
   let state: (props: T) => void;
-  const F: IFunFrets<T> = {
-    modelProps,
-    registerAction,
-    registerField,
-    registerModel,
-    registerRouteAction,
-    registerView,
-  };
 
   function registerAction(key: string, actionFn: IActionFn<T>): IActionEventHandler {
     if (!actions[key]) {
@@ -90,7 +130,7 @@ export function setup<T extends PropsWithFields>(
     };
   }
 
-  function registerRouteAction(key: string, path: string, actionFn: IActionFn<T>): void {
+  function registerRouteAction(key: string, path: string, actionFn: RouteActionFn<T>): void {
     routes[key] = {
       calculator: actionFn,
       spec: new Path(path),
@@ -107,6 +147,7 @@ export function setup<T extends PropsWithFields>(
     stateRenderer = () => renderFn(F);
     state = (newProps: T) => {
       modelProps = newProps;
+
       projector.scheduleRender();
     };
   }
@@ -143,10 +184,44 @@ export function setup<T extends PropsWithFields>(
     };
   }
 
+  /**
+   * Checks to see if any of the registerd routes are matched and then updates the app state using
+   * the provided transformation function.
+   * @param  {Readonly<T>} props
+   * @returns T
+   */
+  function applyRouteFunction(props: Readonly<T>) {
+    for (const key in routes) {
+      if (routes.hasOwnProperty(key)) {
+        const entry = routes[key];
+        const res = entry.spec.test(window.location.pathname);
+        if (res) {
+          entry.calculator({ key, path: entry.spec.path, data: res}, modelPresenter);
+        }
+      }
+    }
+  }
+
   let stateRenderer: () => VNode;
 
+  const F: IFunFrets<T> = {
+    getRouteLink,
+    modelProps,
+    navToPath,
+    navToRoute,
+    registerAction,
+    registerField,
+    registerModel,
+    registerRouteAction,
+    registerView,
+  };
+
   setupFn(F);
+  window.onpopstate = function(this: Window, evt: Event) {
+    applyRouteFunction(modelProps);
+  };
   return {
+    fretsApp: F,
     mountTo: (id: string) => {
       projector.merge(document.getElementById(id), stateRenderer);
     },

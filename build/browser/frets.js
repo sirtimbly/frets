@@ -1375,16 +1375,46 @@ var Path = /** @class */ (function () {
 function setup(modelProps, setupFn, opts) {
     const projector = createProjector();
     const routes = {};
+    /**
+     * Returns a path when given the key of a route that was previously registered.
+     * @param  {string} key
+     * @param  {any} data? A route data object
+     * @returns string
+     */
+    function getRouteLink(key, data) {
+        if (!routes || !routes[key]) {
+            return false;
+        }
+        return routes[key].spec.build(data || {});
+    }
+    /**
+     * Change the browser location to match the path configured in the route with the
+     * provided key. You still need to call an action to udpate state before the UI will re-render.
+     * @param  {string} key
+     * @param  {any} data?
+     */
+    function navToRoute(key, data) {
+        const r = getRouteLink(key, data);
+        if (r) {
+            navToPath(r);
+        }
+    }
+    /**
+     * Update the browser location with the provided raw string path.
+     * @param  {string} path
+     */
+    function navToPath(path) {
+        try {
+            // tslint:disable-next-line:no-console
+            console.log("Nav to path", path);
+            window.history.pushState(modelProps, "", path);
+        }
+        catch (error) {
+            window.location.pathname = path;
+        }
+    }
     let modelPresenter;
     let state;
-    const F = {
-        modelProps,
-        registerAction,
-        registerField,
-        registerModel,
-        registerRouteAction,
-        registerView,
-    };
     function registerAction(key, actionFn) {
         return (event) => {
             actionFn(event, modelPresenter);
@@ -1435,9 +1465,44 @@ function setup(modelProps, setupFn, opts) {
             value: modelProps.registeredFieldsValues[key],
         };
     }
+    /**
+     * Checks to see if any of the registerd routes are matched and then updates the app state using
+     * the provided transformation function.
+     * @param  {Readonly<T>} props
+     * @returns T
+     */
+    function applyRouteFunction(props) {
+        for (const key in routes) {
+            if (routes.hasOwnProperty(key)) {
+                const entry = routes[key];
+                const res = entry.spec.test(window.location.pathname);
+                // tslint:disable-next-line:no-console
+                console.log("Looking for Route", key, res);
+                if (res) {
+                    entry.calculator({ key, path: entry.spec.path, data: res }, modelPresenter);
+                }
+            }
+        }
+    }
     let stateRenderer;
+    const F = {
+        getRouteLink,
+        modelProps,
+        navToPath,
+        navToRoute,
+        registerAction,
+        registerField,
+        registerModel,
+        registerRouteAction,
+        registerView,
+    };
     setupFn(F);
+    window.onpopstate = function (evt) {
+        applyRouteFunction(modelProps);
+        // state(modelProps);
+    };
     return {
+        fretsApp: F,
         mountTo: (id) => {
             projector.merge(document.getElementById(id), stateRenderer);
         },
