@@ -175,38 +175,44 @@ test("change state but validator stops mutation", (t) => {
 //   t.truthy(list.exists);
 // });
 
-// test("registers a route and changes when navigating", (t) => {
-//   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
-//   F.registerView((app): VNode => {
-//     return h("div", [
-//       (!app.modelProps.activeScreen || app.modelProps.activeScreen === SimpleScreens.Home)
-//         ? h("h1", ["Home Page"])
-//         : h("h1", ["About Page"]),
-//     ]);
-//   });
-//   F.registerRoute("home", "/home", (name, params, props): SimpleProps => {
-//     return {
-//       ...props,
-//       activeScreen: SimpleScreens.Home,
-//     };
-//   });
-//   F.registerRoute("about", "/about", (name, params, props): SimpleProps => {
-//     return {
-//       ...props,
-//       activeScreen: SimpleScreens.About,
-//     };
-//   });
-//   t.is(F.getRouteLink("about"), "/about");
-//   t.false(F.getRouteLink("xyz"));
-//   const proj = createTestProjector(F.stateRenderer);
-//   t.is(proj.query("h1").textContent, "Home Page");
-//   F.navToPath("/about");
-//   window.dispatchEvent(new Event("popstate"));
-//   t.is(proj.query("h1").textContent, "About Page");
-//   F.navToRoute("home");
-//   window.dispatchEvent(new Event("popstate"));
-//   t.is(proj.query("h1").textContent, "Home Page");
-// });
+test("registers a route and changes when navigating", (t) => {
+  const mainApp = setup<SimpleProps>(new SimpleProps(), (f) => {
+    f.registerModel((proposal, state) => {
+      if (proposal.activeScreen) {
+        f.modelProps.activeScreen = proposal.activeScreen;
+        state(f.modelProps);
+      }
+    });
+    f.registerRouteAction("home", "/home", (context, propose) => {
+      propose({
+        activeScreen: SimpleScreens.Home,
+      });
+    });
+    f.registerRouteAction("about", "/about", (context, propose) => {
+      propose({
+        activeScreen: SimpleScreens.About,
+      });
+    });
+    f.registerView((app): VNode => {
+      return h("div", [
+        (!app.modelProps.activeScreen || app.modelProps.activeScreen === SimpleScreens.Home)
+          ? h("h1", ["Home Page"])
+          : h("h1", ["About Page"]),
+      ]);
+    });
+  });
+
+  t.is(mainApp.fretsApp.getRouteLink("about"), "/about");
+  t.false(mainApp.fretsApp.getRouteLink("xyz"));
+  const proj = createTestProjector(mainApp.stateRenderer);
+  t.is(proj.query("h1").textContent, "Home Page");
+  mainApp.fretsApp.navToPath("/about");
+  window.dispatchEvent(new Event("popstate"));
+  t.is(proj.query("h1").textContent, "About Page");
+  mainApp.fretsApp.navToRoute("home");
+  window.dispatchEvent(new Event("popstate"));
+  t.is(proj.query("h1").textContent, "Home Page");
+});
 
 // test("model props can only be updated through an action", (t) => {
 //   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
