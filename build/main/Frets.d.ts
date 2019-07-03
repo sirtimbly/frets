@@ -1,6 +1,11 @@
 import { Projector, VNode } from "maquette";
 import Path from "path-parser";
 import { PropsWithFields } from "./PropsFieldRegistry";
+export interface IValidationObject {
+    notEmpty: boolean | undefined;
+    minLength: number | undefined;
+    maxLength: number | undefined;
+}
 export interface IRegisteredField<T> {
     handler: (evt: Event) => void | boolean;
     validationErrors: string[];

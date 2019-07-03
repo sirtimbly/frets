@@ -6,9 +6,27 @@ import { ActionsWithFields } from "./ActionsFieldRegistry";
 import deepFreeze from "./Freeze";
 import { PropsWithFields } from "./PropsFieldRegistry";
 
+export interface IValidationObject {
+  notEmpty?: {
+    value: boolean,
+    message: string;
+  };
+  minLength?: {
+    value: number,
+    message: string;
+  };
+  maxLength?: {
+    value: number,
+    message: string;
+  };
+}
+
 export interface IRegisteredField<T> {
-  handler: (evt: Event) => void | boolean;
+  handler: (evt: Event, skipValidation?: boolean) => void | boolean;
+  validate: () => void;
   validationErrors: string[];
+  isValid: () => boolean;
+  isDirty: () => boolean;
   value: T;
   clear: () => void;
   key: string;
@@ -44,7 +62,7 @@ export type IModelPresenter<T extends PropsWithFields> = (proposal: Partial<T>, 
 export interface IFunFrets<T extends PropsWithFields> {
   modelProps: T;
   registerView: (renderFn: (app: IFunFrets<T>) => VNode) => void;
-  registerField: (key: string, defaultValue: any, validation?: {notEmpty?: boolean}) => IRegisteredField<any>;
+  registerField: (key: string, defaultValue: any, validation?: IValidationObject) => IRegisteredField<any>;
   registerAction: (key: string, actionFn: IActionFn<T> ) => IActionEventHandler;
   registerRouteAction: (key: string, path: string, actionFn: RouteActionFn<T> ) => void;
   registerModel: (presenterFn: IModelPresenter<T>) => void;
@@ -152,14 +170,29 @@ export function setup<T extends PropsWithFields>(
     };
   }
 
-  function registerField<S>(key: string, initialValue?: S, validation?: { notEmpty?: boolean}): IRegisteredField<S> {
-    function handler(evt: Event) {
-      const val = (evt.target as HTMLInputElement).value;
-      modelProps.registeredFieldsValues[key] = val;
+  function registerField<S>(key: string, initialValue?: S, validation?: IValidationObject): IRegisteredField<S> {
+    function handler(evt: Event, skipValidation?: boolean) {
+      modelProps.registeredFieldsValues[key] = (evt.target as HTMLInputElement).value;
+      if ((evt.target as HTMLInputElement).value.length > 0) {
+        modelProps.registeredFieldsState[key].dirty = true; // latching switch
+      }
+      if (!skipValidation) {
+        validate();
+      }
+    }
+
+    function validate() {
       if (validation) {
-        let errors: string[] = [];
-        if (validation.notEmpty === true && (!val || val === "")) {
-          errors = ["Should not be empty"];
+        const val = modelProps.registeredFieldsValues[key];
+        const errors: string[] = [];
+        if (validation.notEmpty && (!val || val === "")) {
+          errors.push(validation.notEmpty.message);
+        }
+        if (validation.minLength && val.length < validation.minLength.value) {
+          errors.push(validation.minLength.message);
+        }
+        if (validation.maxLength && val.length > validation.maxLength.value) {
+          errors.push(validation.maxLength.message);
         }
         modelProps.registeredFieldValidationErrors[key] = errors;
       }
@@ -167,6 +200,7 @@ export function setup<T extends PropsWithFields>(
     if (modelProps.registeredFieldsValues[key] === undefined) {
       modelProps.registeredFieldsValues[key] = initialValue || "";
       modelProps.registeredFieldValidationErrors[key] = [];
+      modelProps.registeredFieldsState[key] = { dirty: false };
     }
     if (registeredFieldActions[key] === undefined) {
       registeredFieldActions[key] = handler;
@@ -178,7 +212,10 @@ export function setup<T extends PropsWithFields>(
         modelProps.registeredFieldValidationErrors[key] = [];
       },
       handler,
+      isDirty: () => modelProps.registeredFieldsState[key].dirty,
+      isValid: () => !(modelProps.registeredFieldValidationErrors[key].length > 0),
       key,
+      validate,
       validationErrors: modelProps.registeredFieldValidationErrors[key],
       value: modelProps.registeredFieldsValues[key],
     };

@@ -22,6 +22,8 @@
 
 ![FRETS logo](http://uploads.timbendt.com.s3.amazonaws.com/dropzone/fretslogo4@1x.png)
 
+A chainable API of programmer-friendly abstractions for building User Interfaces without HTML Templates or JSX. Enjoy the safety and productivity of TypeScript in your UI code.
+
 ## Getting Started
 
 `npm install --save frets`
@@ -30,19 +32,19 @@ Use [the Starter Project](https://github.com/sirtimbly/frets-starter) to get goi
 
 Read the [API docs](https://sirtimbly.github.io/frets/)
 
-The basic SAM app lifecycle:
-Action() -> Model -> State() -> View() -> [wait for client events that call an Action()]
+The basic SAM (State Action Model) app lifecycle:
+Action (event) -> Model (update) -> State (calculate) -> View (render) -> [wait for client events that call an Action()]
 
 Note:
 > I based this project on what I read on [sam.js.org](https://sam.js.org) but I modified it slightly.
-> In FRETS the part of "Model" will be played by a function called "validate", and the part of "state" will be played by a function call "calculate". Sometimes, the "View" function is called the "Render" function - in case that helps you wrap your mind around things.
+
 
 ## Philosophical Rules
 
-1. Optimize for Developer Ergonomics
-2. No Magic Strings (Unless it is Text Displayed to the User)
-3. No Configuration Objects (Use TS Classes)
-4. Encourage Functional Programming Models
+1. Optimize for Developer Ergonomics (chainable APIs)
+2. No Magic Strings
+3. No Configuration Objects
+4. Encourage Some Functional Programming
 
 ## Quick Setup
 
@@ -57,44 +59,61 @@ export class TodoListProps extends PropsWithFields {
   public complete: string[];
 
   constructor() {
-    // set some defaults
+    // set some defaults or fetch some data from a server
   }
 
+  // other data helper functions, getter, setters, etc
+
 ```
 
-Create a class for your data mutation actions, but don't implement the function body yet.
+You now can run the frets `setup` function which contains all the view rendering and action handling logic. This should only be run once after page load.
 
 ```ts
-export class TodoListActions extends ActionsWithFields {
-  public saveName: (e: Event) => void;
-  // and the rest with this same signature
-}
+import {setup} from "frets";
+setup(new TodoListProps(), (f) => {
+  // add model
+  f.registerModel((proposal: Partial<RealWorldProps>, state) => {
+		if (proposal.username !== undefined && proposal.username.length > 3) {
+			F.modelProps.username = proposal.username;
+		}
+
+		if (proposal.logout === true) {
+			F.modelProps.username = '';
+		}
+
+		state(F.modelProps);
+	});
+
+  // register the View rendering function
+  F.registerView((app: App): VNode => {
+    const usernameField = app.registerField('fieldName', app.modelProps.username, {notEmpty: true});
+    const passField = app.registerField('fieldPass', '');
+
+    const loginAction = app.registerAction('login', (evt, present) => {
+      evt.preventDefault();
+      present({
+        username: usernameField.value
+      });
+      usernameField.clear();
+      passField.clear();
+    });
+
+    const logoutAction = app.registerAction('logout', (evt, present) => {
+      evt.preventDefault();
+      present({
+        logout: true
+      });
+    });
+
+
+
+
+  );
+
+}).mountTo("mainapp");
 ```
 
-You now have the classes to start up a new FRETS object. Once it's instantiated with some default values and a copy of your actions class you _can_ just mount it to the dom... but you definitely still want a rendering method for displaying your data.
-
-```ts
-const F = new FRETS<TodoListProps, TodoListActions>(new TodoListProps(), new TodoListActions());
-
-F.mountTo("mainapp");
-```
-
-To create a render view you need a plain function that accepts as parameters: a instance of the model properties and a instance of the actions class.
-
-```ts
-const renderRootView = (app: FRETS<TodoListProps, TodoListActions>): VNode => {
-  return $$().div.flex.flexColumn.justifyAround.h([
-    $$().h2.h([`hello ${app.modelProps.name}`]),
-    $$().input.h({
-      onchange: app.actions.saveName,
-      value: app.modelProps.name,
-    }),
-    $$().button.btn.h(["Save"]),
-  ]);
-
-
-F.registerView(renderRootView);
-```
+To create a render view you need a plain function that accepts as parameters an instance of the `IFunFrets<TodoListProps>` object. And it has to return a VNode (specifically a Maquette VNode).
 
 That atomic CSS fluent dom syntax is pretty powerful - it comes from [https://gitlab.com/FRETS/frets-styles-generator](https://gitlab.com/FRETS/frets-styles-generator), but you still need to be able to specify your actions and your state calculation method.
 

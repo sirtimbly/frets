@@ -286,7 +286,11 @@ var toggleClasses = function (domNode, classes, on) {
     if (!classes) {
         return;
     }
-    classes.split(' ').forEach(function (c) { return domNode.classList.toggle(c, on); });
+    classes.split(' ').forEach(function (classToToggle) {
+        if (classToToggle) {
+            domNode.classList.toggle(classToToggle, on);
+        }
+    });
 };
 var updateProperties = function (domNode, previousProperties, properties, projectionOptions) {
     if (!properties) {
@@ -1445,9 +1449,15 @@ function setup(modelProps, setupFn, opts) {
             const val = evt.target.value;
             modelProps.registeredFieldsValues[key] = val;
             if (validation) {
-                let errors = [];
+                const errors = [];
                 if (validation.notEmpty === true && (!val || val === "")) {
-                    errors = ["Should not be empty"];
+                    errors.push("Should not be empty");
+                }
+                if (validation.minLength && val.length < validation.minLength) {
+                    errors.push(`Should be at least ${validation.minLength} characters.`);
+                }
+                if (validation.maxLength && val.length > validation.maxLength) {
+                    errors.push(`Should be no more than ${validation.maxLength} characters.`);
                 }
                 modelProps.registeredFieldValidationErrors[key] = errors;
             }

@@ -4,6 +4,10 @@ export class PropsWithFields {
     [key: string]: any;
   } = {};
 
+  public registeredFieldsState: {
+    [key: string]: { dirty: boolean };
+  } = {};
+
   public registeredFieldValidationErrors: {
     [key: string]: string[];
    } = {};
