@@ -97,62 +97,100 @@ test("change state but validator stops mutation", (t) => {
   t.is(list.children[0].text, "Invalid");
 });
 
-// test("state updates async", (t) => {
-//   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
-//   F.actions.changeState = F.registerAction((e: Event, data: Readonly<SimpleProps>): SimpleProps => {
-//     setTimeout(() => {
-//       F.render({
-//         ...data,
-//         messages: ["async"],
-//       });
-//     }, 50);
-//     return data;
-//   });
-//   F.registerView((app: main): VNode => {
-//     return h("div", [
-//       h("button", { onclick: app.actions.changeState }, ["Load Messages"]),
-//       h("ul", app.modelProps.messages.map((x) => h("li", [x.toString()]))),
-//     ]);
-//   });
+test("state updates async", (t) => {
+  const mainApp = setup<SimpleProps>(new SimpleProps(), (f) => {
+    f.registerModel((proposal, state) => {
+      state(f.modelProps);
+    });
+    const timeoutdone = f.registerAction("timeoutdone", (e: Event, present) => {
+      setTimeout(() => {
+        present({
+          messages: ["async"],
+        });
+      }, 50);
+    });
+    f.registerView((app: main): VNode => {
+      return h("div", [
+        h("button", { onclick: timeoutdone }, ["Load Messages"]),
+        h("ul", app.modelProps.messages.map((x) => h("li", [x.toString()]))),
+      ]);
+    });
+  });
+  const proj = createTestProjector(mainApp.stateRenderer);
+  const list = proj.query("ul");
+  t.falsy(list.children.length);
+  proj.query("button").simulate.click();
+  setTimeout(() => {
+    const list2 = proj.query("ul");
+    t.truthy(list2.children.length);
+    t.is(list2.children[0].text, "async");
+  }, 100);
+});
 
-//   const proj = createTestProjector(F.stateRenderer);
-//   const list = proj.query("ul");
-//   t.falsy(list.children.length);
-//   proj.query("button").simulate.click();
-//   setTimeout(() => {
-//     const list2 = proj.query("ul");
-//     t.truthy(list2.children.length);
-//     t.is(list2.children[0].text, "async");
-//   }, 100);
-// });
+test("state updates async model", (t) => {
+  const mainApp = setup<SimpleProps>(new SimpleProps(), (f) => {
+    f.registerModel((proposal, state) => {
+      if (proposal && proposal.messages.length) {
+        f.modelProps.messages = proposal.messages;
+        state(f.modelProps);
+      }
+      setTimeout(() => {
+        f.modelProps.messages = ["done"];
+        state({
+          ...f.modelProps,
+        });
+      }, 50);
+    });
+    const timeoutdone = f.registerAction("timeoutdone", (e: Event, present) => {
+      present({messages: ["loading"]});
+    });
+    f.registerView((app: main): VNode => {
+      return h("div", [
+        h("button", { onclick: timeoutdone }, ["Load Messages"]),
+        h("ul", app.modelProps.messages.map((x) => h("li", [x.toString()]))),
+      ]);
+    });
+  });
+  const proj = createTestProjector(mainApp.stateRenderer);
+  const list = proj.query("ul");
+  t.falsy(list.children.length);
+  proj.query("button").simulate.click();
+  t.truthy(list.children.length);
+  t.is(list.children[0].text, "loading");
+  setTimeout(() => {
+    const list2 = proj.query("ul");
+    t.truthy(list2.children.length);
+    t.is(list2.children[0].text, "done");
+  }, 100);
+});
 
-// test("registers a field", (t) => {
-//   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
-//   F.registerField("test", "0");
-//   t.is(F.modelProps.registeredFieldsValues["test"], "0");
-//   const field = F.getField("test");
-//   t.is(field.value, "0");
-// });
+test("registers a field", (t) => {
+
+  const mainApp = setup<SimpleProps>(new SimpleProps(), (f) => {
+
+    const field = f.registerField("test", "0");
+    t.is(f.modelProps.registeredFieldsValues["test"], "0");
+    t.is(field.value, "0");
+  });
+});
 
 // test("registers and updates a field", (t) => {
-//   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
-//   F.registerField("test", "0");
-//   t.is(F.modelProps.registeredFieldsValues["test"], "0");
-
-//   F.registerView((app: main): VNode => {
-//     const field = app.getField("test");
-//     return h("div", [
-//       h("button", { onclick: app.actions.changeState }, ["Load Messages"]),
-//       h("input", {type: "text", onchange: field.handler, value: field.value.toString()}, []),
-//       h("div.output", [field.value]),
-//     ]);
+//   const mainApp = setup<SimpleProps>(new SimpleProps(), (f) => {
+//     const field = f.registerField("test", "0");
+//     t.is(field.value, "0");
+//     f.registerView((app: main): VNode => {
+//       return h("div", [
+//         h("button", ["Load Messages"]),
+//         h("input", {type: "text", onchange: field.handler, value: field.value.toString()}, []),
+//         h("div.output", [field.value]),
+//       ]);
+//     });
 //   });
-//   const proj = createTestProjector(F.stateRenderer);
+//   const proj = createTestProjector(mainApp.stateRenderer);
 //   const input = proj.query("input");
 //   t.truthy(input.exists);
 //   input.simulate.change({ value: "2"});
-//   t.truthy(F.getField("test").value === "2");
-//   proj.initialize(F.stateRenderer);
+//   proj.initialize(mainApp.stateRenderer);
 //   t.is(proj.query(".output").textContent, "2");
 // });
 

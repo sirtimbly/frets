@@ -1409,8 +1409,6 @@ function setup(modelProps, setupFn, opts) {
      */
     function navToPath(path) {
         try {
-            // tslint:disable-next-line:no-console
-            console.log("Nav to path", path);
             window.history.pushState(modelProps, "", path);
         }
         catch (error) {
@@ -1480,8 +1478,6 @@ function setup(modelProps, setupFn, opts) {
             if (routes.hasOwnProperty(key)) {
                 const entry = routes[key];
                 const res = entry.spec.test(window.location.pathname);
-                // tslint:disable-next-line:no-console
-                console.log("Looking for Route", key, res);
                 if (res) {
                     entry.calculator({ key, path: entry.spec.path, data: res }, modelPresenter);
                 }
@@ -1503,7 +1499,6 @@ function setup(modelProps, setupFn, opts) {
     setupFn(F);
     window.onpopstate = function (evt) {
         applyRouteFunction(modelProps);
-        // state(modelProps);
     };
     return {
         fretsApp: F,
