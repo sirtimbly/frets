@@ -1391,6 +1391,7 @@ function setup(modelProps, setupFn, opts) {
      */
     function getRouteLink(key, data) {
         if (!routes || !routes[key]) {
+            console.log("no route found", key);
             return false;
         }
         return routes[key].spec.build(data || {});
@@ -1412,14 +1413,24 @@ function setup(modelProps, setupFn, opts) {
      * @param  {string} path
      */
     function navToPath(path) {
+        console.log("nav to path - pushState", path);
         try {
             window.history.pushState(modelProps, "", path);
         }
         catch (error) {
             window.location.pathname = path;
         }
+        applyRouteFunction(modelProps);
     }
-    let modelPresenter;
+    const modelPresenters = {};
+    function modelPresenter(proposal) {
+        for (const key in modelPresenters) {
+            if (modelPresenters.hasOwnProperty(key)) {
+                const element = modelPresenters[key];
+                element(proposal);
+            }
+        }
+    }
     let state;
     function registerAction(key, actionFn) {
         return (event) => {
@@ -1427,15 +1438,19 @@ function setup(modelProps, setupFn, opts) {
         };
     }
     function registerRouteAction(key, path, actionFn) {
+        console.log("register route", key, path);
         routes[key] = {
             calculator: actionFn,
             spec: new Path(path),
         };
     }
-    function registerModel(presenterFn) {
-        modelPresenter = (proposal) => {
-            presenterFn(proposal, state);
-        };
+    function registerAcceptor(presenterFn) {
+        const loc = presenterFn.toString().slice(0, 250);
+        if (!modelPresenters[loc]) {
+            modelPresenters[loc] = (proposal) => {
+                presenterFn(proposal, state);
+            };
+        }
     }
     function registerView(renderFn) {
         stateRenderer = () => renderFn(F);
@@ -1445,19 +1460,27 @@ function setup(modelProps, setupFn, opts) {
         };
     }
     function registerField(key, initialValue, validation) {
-        function handler(evt) {
-            const val = evt.target.value;
-            modelProps.registeredFieldsValues[key] = val;
+        function handler(evt, skipValidation) {
+            modelProps.registeredFieldsValues[key] = evt.target.value;
+            if (evt.target.value.length > 0) {
+                modelProps.registeredFieldsState[key].dirty = true; // latching switch
+            }
+            if (!skipValidation) {
+                validate();
+            }
+        }
+        function validate() {
             if (validation) {
+                const val = modelProps.registeredFieldsValues[key];
                 const errors = [];
-                if (validation.notEmpty === true && (!val || val === "")) {
-                    errors.push("Should not be empty");
+                if (validation.notEmpty && (!val || val === "")) {
+                    errors.push(validation.notEmpty.message);
                 }
-                if (validation.minLength && val.length < validation.minLength) {
-                    errors.push(`Should be at least ${validation.minLength} characters.`);
+                if (validation.minLength && val.length < validation.minLength.value) {
+                    errors.push(validation.minLength.message);
                 }
-                if (validation.maxLength && val.length > validation.maxLength) {
-                    errors.push(`Should be no more than ${validation.maxLength} characters.`);
+                if (validation.maxLength && val.length > validation.maxLength.value) {
+                    errors.push(validation.maxLength.message);
                 }
                 modelProps.registeredFieldValidationErrors[key] = errors;
             }
@@ -1465,6 +1488,7 @@ function setup(modelProps, setupFn, opts) {
         if (modelProps.registeredFieldsValues[key] === undefined) {
             modelProps.registeredFieldsValues[key] = initialValue || "";
             modelProps.registeredFieldValidationErrors[key] = [];
+            modelProps.registeredFieldsState[key] = { dirty: false };
         }
         return {
             clear: () => {
@@ -1472,7 +1496,10 @@ function setup(modelProps, setupFn, opts) {
                 modelProps.registeredFieldValidationErrors[key] = [];
             },
             handler,
+            isDirty: () => modelProps.registeredFieldsState[key].dirty,
+            isValid: () => !(modelProps.registeredFieldValidationErrors[key].length > 0),
             key,
+            validate,
             validationErrors: modelProps.registeredFieldValidationErrors[key],
             value: modelProps.registeredFieldsValues[key],
         };
@@ -1484,11 +1511,14 @@ function setup(modelProps, setupFn, opts) {
      * @returns T
      */
     function applyRouteFunction(props) {
+        console.log("routes:", routes);
         for (const key in routes) {
             if (routes.hasOwnProperty(key)) {
                 const entry = routes[key];
+                console.log("testing", entry);
                 const res = entry.spec.test(window.location.pathname);
                 if (res) {
+                    console.log("found route", res);
                     entry.calculator({ key, path: entry.spec.path, data: res }, modelPresenter);
                 }
             }
@@ -1502,14 +1532,14 @@ function setup(modelProps, setupFn, opts) {
         navToRoute,
         registerAction,
         registerField,
-        registerModel,
+        registerAcceptor,
         registerRouteAction,
         registerView,
     };
-    setupFn(F);
     window.onpopstate = function (evt) {
         applyRouteFunction(modelProps);
     };
+    setupFn(F);
     return {
         fretsApp: F,
         mountTo: (id) => {
@@ -1522,6 +1552,7 @@ function setup(modelProps, setupFn, opts) {
 class PropsWithFields {
     constructor() {
         this.registeredFieldsValues = {};
+        this.registeredFieldsState = {};
         this.registeredFieldValidationErrors = {};
     }
 }

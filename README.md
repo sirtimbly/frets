@@ -86,7 +86,9 @@ setup(new TodoListProps(), (f) => {
 
   // register the View rendering function
   F.registerView((app: App): VNode => {
-    const usernameField = app.registerField('fieldName', app.modelProps.username, {notEmpty: true});
+    const usernameField = app.registerField('fieldName', app.modelProps.username, {notEmpty: {
+      value: true, message: 'Cant be empty.'
+    });
     const passField = app.registerField('fieldPass', '');
 
     const loginAction = app.registerAction('login', (evt, present) => {
@@ -104,10 +106,6 @@ setup(new TodoListProps(), (f) => {
         logout: true
       });
     });
-
-
-
-
   );
 
 }).mountTo("mainapp");

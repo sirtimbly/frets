@@ -65,7 +65,7 @@ export interface IFunFrets<T extends PropsWithFields> {
   registerField: (key: string, defaultValue: any, validation?: IValidationObject) => IRegisteredField<any>;
   registerAction: (key: string, actionFn: IActionFn<T> ) => IActionEventHandler;
   registerRouteAction: (key: string, path: string, actionFn: RouteActionFn<T> ) => void;
-  registerModel: (presenterFn: IModelPresenter<T>) => void;
+  registerAcceptor: (presenterFn: IModelPresenter<T>) => void;
   getRouteLink: (key: string, data?: any) => string | false;
   navToRoute: (key: string, data?: any) => void;
   navToPath: (key: string, data?: any) => void;
@@ -108,6 +108,7 @@ export function setup<T extends PropsWithFields>(
    */
   function getRouteLink(key: string, data ?: any): string | false {
     if (!routes || !routes[key]) {
+      console.log("no route found", key)
       return false;
     }
     return routes[key].spec.build(data || {});
@@ -129,14 +130,26 @@ export function setup<T extends PropsWithFields>(
    * @param  {string} path
    */
   function navToPath(path: string) {
+    console.log("nav to path - pushState", path)
     try {
       window.history.pushState(modelProps, "", path);
     } catch (error) {
       window.location.pathname = path;
     }
+    applyRouteFunction(modelProps)
   }
 
-  let modelPresenter: IPresent<T>;
+  const modelPresenters: {[k: string] : IPresent<T>} = {};
+
+  function modelPresenter(proposal: Partial<T>) {
+    for (const key in modelPresenters) {
+      if (modelPresenters.hasOwnProperty(key)) {
+        const element = modelPresenters[key];
+        element(proposal);
+      }
+    }
+  }
+
   let state: (props: T) => void;
 
   function registerAction(key: string, actionFn: IActionFn<T>): IActionEventHandler {
@@ -149,16 +162,20 @@ export function setup<T extends PropsWithFields>(
   }
 
   function registerRouteAction(key: string, path: string, actionFn: RouteActionFn<T>): void {
+    console.log("register route", key, path)
     routes[key] = {
       calculator: actionFn,
       spec: new Path(path),
     };
   }
 
-  function registerModel(presenterFn: IModelPresenter<T>) {
-    modelPresenter = (proposal: Partial<T>) => {
-      presenterFn(proposal, state);
-    };
+  function registerAcceptor(presenterFn: IModelPresenter<T>) {
+    const loc = presenterFn.toString().slice(0,250);
+    if (!modelPresenters[loc]) {
+      modelPresenters[loc] = (proposal: Partial<T>) => {
+        presenterFn(proposal, state);
+      };
+    }
   }
 
   function registerView(renderFn: (fretsApp: IFunFrets<T>) => VNode) {
@@ -228,11 +245,14 @@ export function setup<T extends PropsWithFields>(
    * @returns T
    */
   function applyRouteFunction(props: Readonly<T>) {
+    console.log("routes:", routes)
     for (const key in routes) {
       if (routes.hasOwnProperty(key)) {
         const entry = routes[key];
+        console.log("testing", entry)
         const res = entry.spec.test(window.location.pathname);
         if (res) {
+          console.log("found route", res)
           entry.calculator({ key, path: entry.spec.path, data: res}, modelPresenter);
         }
       }
@@ -248,15 +268,15 @@ export function setup<T extends PropsWithFields>(
     navToRoute,
     registerAction,
     registerField,
-    registerModel,
+    registerAcceptor,
     registerRouteAction,
     registerView,
   };
-
-  setupFn(F);
-  window.onpopstate = function(this: Window, evt: Event) {
+  window.onpopstate = function (this: Window, evt: Event) {
     applyRouteFunction(modelProps);
   };
+  setupFn(F);
+
   return {
     fretsApp: F,
     mountTo: (id: string) => {

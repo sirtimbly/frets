@@ -33,7 +33,7 @@ test("FRETS initializes with simple types", (t) => {
 
 test("actions change state", (t) => {
   const app = setup<SimpleProps>(new SimpleProps(), (f) => {
-    f.registerModel((proposal, state) => {
+    f.registerAcceptor((proposal, state) => {
       if (proposal.messages) {
         f.modelProps.messages = proposal.messages;
       }
@@ -64,7 +64,7 @@ test("actions change state", (t) => {
 
 test("change state but validator stops mutation", (t) => {
   const mainApp = setup<SimpleProps>(new SimpleProps(), (f) => {
-    f.registerModel((proposal, state) => {
+    f.registerAcceptor((proposal, state) => {
       if (proposal.checkValue < 0) {
         f.modelProps.messages = ["Invalid"];
       }
@@ -99,7 +99,7 @@ test("change state but validator stops mutation", (t) => {
 
 test("state updates async", (t) => {
   const mainApp = setup<SimpleProps>(new SimpleProps(), (f) => {
-    f.registerModel((proposal, state) => {
+    f.registerAcceptor((proposal, state) => {
       state(f.modelProps);
     });
     const timeoutdone = f.registerAction("timeoutdone", (e: Event, present) => {
@@ -129,7 +129,7 @@ test("state updates async", (t) => {
 
 test("state updates async model", (t) => {
   const mainApp = setup<SimpleProps>(new SimpleProps(), (f) => {
-    f.registerModel((proposal, state) => {
+    f.registerAcceptor((proposal, state) => {
       if (proposal && proposal.messages.length) {
         f.modelProps.messages = proposal.messages;
         state(f.modelProps);
@@ -215,7 +215,7 @@ test("registers a field", (t) => {
 
 test("registers a route and changes when navigating", (t) => {
   const mainApp = setup<SimpleProps>(new SimpleProps(), (f) => {
-    f.registerModel((proposal, state) => {
+    f.registerAcceptor((proposal, state) => {
       if (proposal.activeScreen) {
         f.modelProps.activeScreen = proposal.activeScreen;
         state(f.modelProps);

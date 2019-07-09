@@ -2,13 +2,25 @@ import { Projector, VNode } from "maquette";
 import Path from "path-parser";
 import { PropsWithFields } from "./PropsFieldRegistry";
 export interface IValidationObject {
-    notEmpty: boolean | undefined;
-    minLength: number | undefined;
-    maxLength: number | undefined;
+    notEmpty?: {
+        value: boolean;
+        message: string;
+    };
+    minLength?: {
+        value: number;
+        message: string;
+    };
+    maxLength?: {
+        value: number;
+        message: string;
+    };
 }
 export interface IRegisteredField<T> {
-    handler: (evt: Event) => void | boolean;
+    handler: (evt: Event, skipValidation?: boolean) => void | boolean;
+    validate: () => void;
     validationErrors: string[];
+    isValid: () => boolean;
+    isDirty: () => boolean;
     value: T;
     clear: () => void;
     key: string;
@@ -39,12 +51,10 @@ export declare type IModelPresenter<T extends PropsWithFields> = (proposal: Part
 export interface IFunFrets<T extends PropsWithFields> {
     modelProps: T;
     registerView: (renderFn: (app: IFunFrets<T>) => VNode) => void;
-    registerField: (key: string, defaultValue: any, validation?: {
-        notEmpty?: boolean;
-    }) => IRegisteredField<any>;
+    registerField: (key: string, defaultValue: any, validation?: IValidationObject) => IRegisteredField<any>;
     registerAction: (key: string, actionFn: IActionFn<T>) => IActionEventHandler;
     registerRouteAction: (key: string, path: string, actionFn: RouteActionFn<T>) => void;
-    registerModel: (presenterFn: IModelPresenter<T>) => void;
+    registerAcceptor: (presenterFn: IModelPresenter<T>) => void;
     getRouteLink: (key: string, data?: any) => string | false;
     navToRoute: (key: string, data?: any) => void;
     navToPath: (key: string, data?: any) => void;
