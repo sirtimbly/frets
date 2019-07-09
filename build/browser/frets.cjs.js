@@ -1391,7 +1391,6 @@ function setup(modelProps, setupFn, opts) {
      */
     function getRouteLink(key, data) {
         if (!routes || !routes[key]) {
-            console.log("no route found", key);
             return false;
         }
         return routes[key].spec.build(data || {});
@@ -1413,7 +1412,6 @@ function setup(modelProps, setupFn, opts) {
      * @param  {string} path
      */
     function navToPath(path) {
-        console.log("nav to path - pushState", path);
         try {
             window.history.pushState(modelProps, "", path);
         }
@@ -1438,7 +1436,7 @@ function setup(modelProps, setupFn, opts) {
         };
     }
     function registerRouteAction(key, path, actionFn) {
-        console.log("register route", key, path);
+        // console.log("register route", key, path)
         routes[key] = {
             calculator: actionFn,
             spec: new Path(path),
@@ -1511,14 +1509,14 @@ function setup(modelProps, setupFn, opts) {
      * @returns T
      */
     function applyRouteFunction(props) {
-        console.log("routes:", routes);
+        // console.log("routes:", routes)
         for (const key in routes) {
             if (routes.hasOwnProperty(key)) {
                 const entry = routes[key];
-                console.log("testing", entry);
+                // console.log("testing", entry)
                 const res = entry.spec.test(window.location.pathname);
                 if (res) {
-                    console.log("found route", res);
+                    // console.log("found route", res)
                     entry.calculator({ key, path: entry.spec.path, data: res }, modelPresenter);
                 }
             }
@@ -1530,9 +1528,9 @@ function setup(modelProps, setupFn, opts) {
         modelProps,
         navToPath,
         navToRoute,
+        registerAcceptor,
         registerAction,
         registerField,
-        registerAcceptor,
         registerRouteAction,
         registerView,
     };

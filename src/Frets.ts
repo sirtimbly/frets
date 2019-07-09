@@ -108,7 +108,6 @@ export function setup<T extends PropsWithFields>(
    */
   function getRouteLink(key: string, data ?: any): string | false {
     if (!routes || !routes[key]) {
-      console.log("no route found", key)
       return false;
     }
     return routes[key].spec.build(data || {});
@@ -130,16 +129,15 @@ export function setup<T extends PropsWithFields>(
    * @param  {string} path
    */
   function navToPath(path: string) {
-    console.log("nav to path - pushState", path)
     try {
       window.history.pushState(modelProps, "", path);
     } catch (error) {
       window.location.pathname = path;
     }
-    applyRouteFunction(modelProps)
+    applyRouteFunction(modelProps);
   }
 
-  const modelPresenters: {[k: string] : IPresent<T>} = {};
+  const modelPresenters: {[k: string]: IPresent<T>} = {};
 
   function modelPresenter(proposal: Partial<T>) {
     for (const key in modelPresenters) {
@@ -162,7 +160,7 @@ export function setup<T extends PropsWithFields>(
   }
 
   function registerRouteAction(key: string, path: string, actionFn: RouteActionFn<T>): void {
-    console.log("register route", key, path)
+    // console.log("register route", key, path)
     routes[key] = {
       calculator: actionFn,
       spec: new Path(path),
@@ -170,7 +168,7 @@ export function setup<T extends PropsWithFields>(
   }
 
   function registerAcceptor(presenterFn: IModelPresenter<T>) {
-    const loc = presenterFn.toString().slice(0,250);
+    const loc = presenterFn.toString().slice(0, 250);
     if (!modelPresenters[loc]) {
       modelPresenters[loc] = (proposal: Partial<T>) => {
         presenterFn(proposal, state);
@@ -245,14 +243,14 @@ export function setup<T extends PropsWithFields>(
    * @returns T
    */
   function applyRouteFunction(props: Readonly<T>) {
-    console.log("routes:", routes)
+    // console.log("routes:", routes)
     for (const key in routes) {
       if (routes.hasOwnProperty(key)) {
         const entry = routes[key];
-        console.log("testing", entry)
+        // console.log("testing", entry)
         const res = entry.spec.test(window.location.pathname);
         if (res) {
-          console.log("found route", res)
+          // console.log("found route", res)
           entry.calculator({ key, path: entry.spec.path, data: res}, modelPresenter);
         }
       }
@@ -266,13 +264,13 @@ export function setup<T extends PropsWithFields>(
     modelProps,
     navToPath,
     navToRoute,
+    registerAcceptor,
     registerAction,
     registerField,
-    registerAcceptor,
     registerRouteAction,
     registerView,
   };
-  window.onpopstate = function (this: Window, evt: Event) {
+  window.onpopstate = function(this: Window, evt: Event) {
     applyRouteFunction(modelProps);
   };
   setupFn(F);
