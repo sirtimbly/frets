@@ -47,11 +47,14 @@ export interface IActionsObj<V> {
 export declare type IPresent<T extends PropsWithFields> = (proposal: Partial<T>) => void;
 export declare type IActionEventHandler = (event: Event) => void;
 export declare type IActionFn<T extends PropsWithFields> = (event: Event, present: IPresent<T>) => void;
-export declare type IModelPresenter<T extends PropsWithFields> = (proposal: Partial<T>, state: (props: T) => void) => void;
+export declare type IModelPresenter<T extends PropsWithFields> = (proposal: Partial<T>, state: (props: Partial<T>) => void) => void;
+export declare type IRegisterFieldFn = <U>(key: string, defaultValue: U, validation?: IValidationObject) => IRegisteredField<U>;
 export interface IFunFrets<T extends PropsWithFields> {
     modelProps: T;
+    present: (proposal: Partial<T>) => void;
+    projector: Projector;
     registerView: (renderFn: (app: IFunFrets<T>) => VNode) => void;
-    registerField: (key: string, defaultValue: any, validation?: IValidationObject) => IRegisteredField<any>;
+    registerField: IRegisterFieldFn;
     registerAction: (key: string, actionFn: IActionFn<T>) => IActionEventHandler;
     registerRouteAction: (key: string, path: string, actionFn: RouteActionFn<T>) => void;
     registerAcceptor: (presenterFn: IModelPresenter<T>) => void;
@@ -63,6 +66,7 @@ export interface IMountable<T extends PropsWithFields> {
     fretsApp: IFunFrets<T>;
     mountTo: (id: string) => void;
     stateRenderer: () => VNode;
+    present: (proposal: Partial<T>) => void;
 }
 export interface ISetupOptions {
     projector: Projector;

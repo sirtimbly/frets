@@ -57,14 +57,16 @@ export interface IActionsObj<V> { [k: string]: ActionFn<V>; }
 export type IPresent<T extends PropsWithFields> = (proposal: Partial<T>) => void;
 export type IActionEventHandler = (event: Event) => void;
 export type IActionFn<T extends PropsWithFields> = (event: Event, present: IPresent<T>) => void;
-export type IModelPresenter<T extends PropsWithFields> = (proposal: Partial<T>, state: (props: T) => void) => void;
-
+export type IModelPresenter<T extends PropsWithFields> = (proposal: Partial<T>, state: (props: Partial<T>) => void) => void;
+export type IRegisterFieldFn = <U>(key: string, defaultValue: U, validation?: IValidationObject) => IRegisteredField<U>;
 export interface IFunFrets<T extends PropsWithFields> {
   modelProps: T;
+  present: (proposal: Partial<T>) => void;
+  projector: Projector;
   registerView: (renderFn: (app: IFunFrets<T>) => VNode) => void;
-  registerField: (key: string, defaultValue: any, validation?: IValidationObject) => IRegisteredField<any>;
-  registerAction: (key: string, actionFn: IActionFn<T> ) => IActionEventHandler;
-  registerRouteAction: (key: string, path: string, actionFn: RouteActionFn<T> ) => void;
+  registerField: IRegisterFieldFn;
+  registerAction: (key: string, actionFn: IActionFn<T>) => IActionEventHandler;
+  registerRouteAction: (key: string, path: string, actionFn: RouteActionFn<T>) => void;
   registerAcceptor: (presenterFn: IModelPresenter<T>) => void;
   getRouteLink: (key: string, data?: any) => string | false;
   navToRoute: (key: string, data?: any) => void;
@@ -75,6 +77,7 @@ export interface IMountable<T extends PropsWithFields> {
   fretsApp: IFunFrets<T>;
   mountTo: (id: string) => void;
   stateRenderer: () => VNode;
+  present: (proposal: Partial<T>) => void;
 }
 export interface ISetupOptions {
   projector: Projector;
@@ -83,11 +86,12 @@ export interface ISetupOptions {
 export function setup<T extends PropsWithFields>(
   modelProps: T, setupFn: (fretsApp: IFunFrets<T>) => void, opts?: ISetupOptions): IMountable<T> {
 
-  const projector = createProjector();
+
+  const projector = opts && opts.projector || createProjector();
 
   const actions: {
     [key: string]: IActionFn<T>;
-  } = { };
+  } = {};
 
   const routes: {
     [key: string]: {
@@ -106,7 +110,7 @@ export function setup<T extends PropsWithFields>(
    * @param  {any} data? A route data object
    * @returns string
    */
-  function getRouteLink(key: string, data ?: any): string | false {
+  function getRouteLink(key: string, data?: any): string | false {
     if (!routes || !routes[key]) {
       return false;
     }
@@ -118,7 +122,7 @@ export function setup<T extends PropsWithFields>(
    * @param  {string} key
    * @param  {any} data?
    */
-  function navToRoute(key: string, data ?: any) {
+  function navToRoute(key: string, data?: any) {
     const r = getRouteLink(key, data);
     if (r) {
       navToPath(r);
@@ -137,13 +141,13 @@ export function setup<T extends PropsWithFields>(
     applyRouteFunction(modelProps);
   }
 
-  const modelPresenters: {[k: string]: IPresent<T>} = {};
+  const modelPresenters: { [k: string]: IPresent<T> } = {};
 
   function modelPresenter(proposal: Partial<T>) {
     for (const key in modelPresenters) {
       if (modelPresenters.hasOwnProperty(key)) {
-        const element = modelPresenters[key];
-        element(proposal);
+        const accept = modelPresenters[key];
+        accept(proposal);
       }
     }
   }
@@ -168,27 +172,41 @@ export function setup<T extends PropsWithFields>(
   }
 
   function registerAcceptor(presenterFn: IModelPresenter<T>) {
-    const loc = presenterFn.toString().slice(0, 250);
-    if (!modelPresenters[loc]) {
-      modelPresenters[loc] = (proposal: Partial<T>) => {
+    const acceptorId = presenterFn.toString().slice(0, 250);
+    if (!modelPresenters[acceptorId]) {
+      modelPresenters[acceptorId] = (proposal: Partial<T>) => {
         presenterFn(proposal, state);
       };
     }
   }
 
-  function registerView(renderFn: (fretsApp: IFunFrets<T>) => VNode) {
-    stateRenderer = () => renderFn(F);
-    state = (newProps: T) => {
-      modelProps = newProps;
+  // function registerView(renderFn: (fretsApp: IFunFrets<T>) => VNode) {
+  //   stateRenderer = () => {
+  //     console.log("calling renderView fn", F)
+  //     return renderFn(F);
+  //   }
+  //   state = (newProps: Partial<T>) => {
+  //     console.log('updating state inside frets', newProps)
+  //     modelProps = {
+  //       ...modelProps,
+  //       ...newProps
+  //     }
+  //     projector.scheduleRender();
+  //   };
+  // }
 
-      projector.scheduleRender();
-    };
-  }
+  function registerField<S>(key: string, initialValue: S, validation?: IValidationObject): IRegisteredField<S> {
+    function handler(evt: InputEvent | Event, skipValidation?: boolean) {
 
-  function registerField<S>(key: string, initialValue?: S, validation?: IValidationObject): IRegisteredField<S> {
-    function handler(evt: Event, skipValidation?: boolean) {
-      modelProps.registeredFieldsValues[key] = (evt.target as HTMLInputElement).value;
-      if ((evt.target as HTMLInputElement).value.length > 0) {
+      let val;
+      if (typeof evt === typeof InputEvent) {
+        val = (evt as InputEvent).data
+      } else {
+        val = (evt.target as HTMLInputElement).value
+      }
+
+      modelProps.registeredFieldsValues[key] = val;
+      if (val.length > 0) {
         modelProps.registeredFieldsState[key].dirty = true; // latching switch
       }
       if (!skipValidation) {
@@ -251,7 +269,7 @@ export function setup<T extends PropsWithFields>(
         const res = entry.spec.test(window.location.pathname);
         if (res) {
           // console.log("found route", res)
-          entry.calculator({ key, path: entry.spec.path, data: res}, modelPresenter);
+          entry.calculator({ key, path: entry.spec.path, data: res }, modelPresenter);
         }
       }
     }
@@ -264,13 +282,29 @@ export function setup<T extends PropsWithFields>(
     modelProps,
     navToPath,
     navToRoute,
+    present: modelPresenter,
+    projector,
     registerAcceptor,
     registerAction,
     registerField,
     registerRouteAction,
-    registerView,
+    registerView: function (renderFn: (fretsApp: IFunFrets<T>) => VNode) {
+      const fretsContext = this
+      stateRenderer = () => {
+        console.log("calling renderView fn", fretsContext)
+        return renderFn(fretsContext);
+      }
+      state = function (newProps: Partial<T>) {
+        console.log('updating state inside frets', newProps)
+        fretsContext.modelProps = {
+          ...modelProps,
+          ...newProps
+        }
+        projector.scheduleRender();
+      };
+    },
   };
-  window.onpopstate = function(this: Window, evt: Event) {
+  window.onpopstate = function (this: Window, evt: Event) {
     applyRouteFunction(modelProps);
   };
   setupFn(F);
@@ -278,8 +312,9 @@ export function setup<T extends PropsWithFields>(
   return {
     fretsApp: F,
     mountTo: (id: string) => {
-      projector.merge(document.getElementById(id), stateRenderer);
+      projector.replace(document.getElementById(id), stateRenderer);
     },
+    present: modelPresenter,
     stateRenderer,
   };
 }

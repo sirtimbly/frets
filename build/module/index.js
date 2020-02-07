@@ -1,6 +1,0 @@
-import * as maquette from "maquette";
-export { setup } from "./Frets";
-export { PropsWithFields } from "./PropsFieldRegistry";
-export { ActionsWithFields } from "./ActionsFieldRegistry";
-export { maquette };
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiaW5kZXguanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi9zcmMvaW5kZXgudHMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUEsT0FBTyxLQUFLLFFBQVEsTUFBTSxVQUFVLENBQUM7QUFJckMsT0FBTyxFQUFFLEtBQUssRUFBb0YsTUFBTSxTQUFTLENBQUM7QUFDbEgsT0FBTyxFQUFFLGVBQWUsRUFBRSxNQUFNLHNCQUFzQixDQUFDO0FBQ3ZELE9BQU8sRUFBRSxpQkFBaUIsRUFBRSxNQUFNLHdCQUF3QixDQUFDO0FBQzNELE9BQU8sRUFBRSxRQUFRLEVBQUUsQ0FBQyJ9

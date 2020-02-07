@@ -1,5 +1,7 @@
-
 export class PropsWithFields {
+  constructor(data?: any) {
+    Object.assign(this, data);
+  }
   public registeredFieldsValues: {
     [key: string]: any;
   } = {};

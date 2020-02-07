@@ -116,7 +116,7 @@ You will need a tsconfig.json file in the root of your project.
 
 ## App.ts
 
-Setup some important things in the main typescript file.
+Setup some important things need to be set up in the main typescript file.
 
 It needs a class defined for your data model.
 

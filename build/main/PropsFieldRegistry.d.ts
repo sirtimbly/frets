@@ -1,4 +1,5 @@
 export declare class PropsWithFields {
+    constructor(data?: any);
     registeredFieldsValues: {
         [key: string]: any;
     };
