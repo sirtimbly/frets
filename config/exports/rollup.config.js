@@ -11,7 +11,7 @@ const substituteModulePaths = {
 }
 
 export default {
-    entry: 'build/module/index.js',
+    input: 'build/module/index.js',
     sourceMap: true,
     plugins: [
         alias(substituteModulePaths),
@@ -20,10 +20,10 @@ export default {
         }),
         commonjs({
             namedExports: {
-              // left-hand side can be an absolute path, a path
-              // relative to the current directory, or the name
-              // of a module in node_modules
-              'maquette': [ 'Projector', 'createProjector' ]
+                // left-hand side can be an absolute path, a path
+                // relative to the current directory, or the name
+                // of a module in node_modules
+                'maquette': ['Projector', 'createProjector']
             }
         })
     ]

@@ -1,15 +1,14 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-import test from "ava";
-import { ActionsWithFields, FRETS, PropsWithFields } from "frets";
-import { h } from "maquette";
-import { createTestProjector } from "maquette-query";
+import test from 'ava';
+import {
+    PropsWithFields,
+    setup
+} from '../src/index';
+import {
+    h
+} from 'maquette';
+import {
+    createTestProjector
+} from 'maquette-query';
 var SimpleScreens;
 (function (SimpleScreens) {
     SimpleScreens[SimpleScreens["Start"] = 0] = "Start";
@@ -24,182 +23,254 @@ class SimpleProps extends PropsWithFields {
         this.checkValue = 0;
     }
 }
-// tslint:disable-next-line:max-classes-per-file
-class SimpleActions extends ActionsWithFields {
-}
-test("FRETS initializes with simple types", (t) => {
-    const F = new FRETS(new SimpleProps(), new SimpleActions());
-    t.truthy(F.render);
-});
-test("renders default div", (t) => {
-    const F = new FRETS(new SimpleProps(), new SimpleActions());
-    const proj = createTestProjector(F.stateRenderer);
-    t.true(proj.query("div#default").exists());
-});
-test("actions change state", (t) => {
-    const F = new FRETS(new SimpleProps(), new SimpleActions());
-    F.actions.changeState = F.registerAction((e, props) => {
-        return Object.assign({}, props, { messages: ["test"] });
+test('FRETS initializes with simple types', t => {
+    const app = setup(new SimpleProps(), (f) => {
+        t.truthy(f.modelProps);
+        t.truthy(f.modelProps.messages);
     });
-    F.registerView((app) => {
-        return h("div", [
-            h("button", { onclick: app.actions.changeState }, ["Load Messages"]),
-            h("ul", app.modelProps.messages.map((x) => h("li", [x.toString()]))),
-        ]);
+    t.truthy(app.mountTo);
+});
+// Test("renders default div", (t) => {
+// });
+test('actions change state', t => {
+    const app = setup(new SimpleProps(), f => {
+        f.registerAcceptor((proposal, state) => {
+            if (proposal.messages) {
+                f.modelProps.messages = proposal.messages;
+            }
+            state(f.modelProps);
+        });
+        const changeState = f.registerAction('changeState', (e, present) => {
+            present({
+                messages: ['test']
+            });
+        });
+        f.registerView((fretsApp) => {
+            return h('div', [
+                h('button', {
+                    onclick: changeState
+                }, ['Load Messages']),
+                h('ul', fretsApp.modelProps.messages.map(x => h('li', [x.toString()])))
+            ]);
+        });
     });
-    const proj = createTestProjector(F.stateRenderer);
-    const list = proj.query("ul");
+    const proj = createTestProjector(app.stateRenderer);
+    const list = proj.query('ul');
     t.falsy(list.children.length);
-    const button = proj.query("button");
+    const button = proj.query('button');
     t.truthy(button.exists);
     button.simulate.click();
     t.truthy(list.children.length);
     t.falsy(list.children[0].children);
-    t.is(list.children[0].text, "test");
+    t.is(list.children[0].text, 'test');
 });
-test("change state but validator stops mutation", (t) => {
-    const F = new FRETS(new SimpleProps(), new SimpleActions());
-    F.validator = (newProps, oldProps) => {
-        if (newProps.checkValue < 0) {
-            return [Object.assign({}, newProps, { messages: ["Invalid"] }), false];
-        }
-        return [newProps, true];
-    };
-    F.actions.setValid = F.registerAction((e, props) => {
-        return Object.assign({}, props, { checkValue: 1 });
+test('change state but validator stops mutation', t => {
+    const mainApp = setup(new SimpleProps(), f => {
+        f.registerAcceptor((proposal, state) => {
+            if (proposal.checkValue < 0) {
+                f.modelProps.messages = ['Invalid'];
+            }
+            state(f.modelProps);
+        });
+        const setOne = f.registerAction('setOne', (e, propose) => {
+            propose({
+                checkValue: 1
+            });
+        });
+        const setNegOne = f.registerAction('setNegOne', (e, propose) => {
+            propose({
+                checkValue: -1
+            });
+        });
+        f.registerView((app) => {
+            return h('div', [
+                h('button#valid', {
+                    onclick: setOne
+                }, ['Set to 1']),
+                h('button#invalid', {
+                    onclick: setNegOne
+                }, ['Set to -1']),
+                h('ul', app.modelProps.messages.map(x => h('li', [x.toString()])))
+            ]);
+        });
     });
-    F.actions.setInvalid = F.registerAction((e, props) => {
-        return Object.assign({}, props, { checkValue: -1 });
-    });
-    F.registerView((app) => {
-        return h("div", [
-            h("button#valid", { onclick: app.actions.setValid }, ["Set to 1"]),
-            h("button#invalid", { onclick: app.actions.setInvalid }, ["Set to -1"]),
-            h("ul", app.modelProps.messages.map((x) => h("li", [x.toString()]))),
-        ]);
-    });
-    const proj = createTestProjector(F.stateRenderer);
-    const list = proj.query("ul");
+    const proj = createTestProjector(mainApp.stateRenderer);
+    const list = proj.query('ul');
     t.falsy(list.children.length);
-    const button1 = proj.query("button#valid");
-    const button2 = proj.query("button#invalid");
+    const button1 = proj.query('button#valid');
+    const button2 = proj.query('button#invalid');
     button1.simulate.click();
     t.falsy(list.children.length);
     button2.simulate.click();
-    t.is(list.children[0].text, "Invalid");
+    t.is(list.children[0].text, 'Invalid');
 });
-test("state updates async", (t) => {
-    const F = new FRETS(new SimpleProps(), new SimpleActions());
-    F.actions.changeState = F.registerAction((e, data) => {
-        setTimeout(() => {
-            F.render(Object.assign({}, data, { messages: ["async"] }));
-        }, 50);
-        return data;
+test('state updates async', t => {
+    const mainApp = setup(new SimpleProps(), f => {
+        f.registerAcceptor((proposal, state) => {
+            state(f.modelProps);
+        });
+        const timeoutdone = f.registerAction('timeoutdone', (e, present) => {
+            setTimeout(() => {
+                present({
+                    messages: ['async']
+                });
+            }, 50);
+        });
+        f.registerView((app) => {
+            return h('div', [
+                h('button', {
+                    onclick: timeoutdone
+                }, ['Load Messages']),
+                h('ul', app.modelProps.messages.map(x => h('li', [x.toString()])))
+            ]);
+        });
     });
-    F.registerView((app) => {
-        return h("div", [
-            h("button", { onclick: app.actions.changeState }, ["Load Messages"]),
-            h("ul", app.modelProps.messages.map((x) => h("li", [x.toString()]))),
-        ]);
-    });
-    const proj = createTestProjector(F.stateRenderer);
-    const list = proj.query("ul");
+    const proj = createTestProjector(mainApp.stateRenderer);
+    const list = proj.query('ul');
     t.falsy(list.children.length);
-    proj.query("button").simulate.click();
+    proj.query('button').simulate.click();
     setTimeout(() => {
-        const list2 = proj.query("ul");
+        const list2 = proj.query('ul');
         t.truthy(list2.children.length);
-        t.is(list2.children[0].text, "async");
+        t.is(list2.children[0].text, 'async');
     }, 100);
 });
-test("registers a field", (t) => {
-    const F = new FRETS(new SimpleProps(), new SimpleActions());
-    F.registerField("test", "0");
-    t.is(F.modelProps.registeredFieldsValues["test"], "0");
-    const field = F.getField("test");
-    t.is(field.value, "0");
-});
-test("registers and updates a field", (t) => {
-    const F = new FRETS(new SimpleProps(), new SimpleActions());
-    F.registerField("test", "0");
-    t.is(F.modelProps.registeredFieldsValues["test"], "0");
-    F.registerView((app) => {
-        const field = app.getField("test");
-        return h("div", [
-            h("button", { onclick: app.actions.changeState }, ["Load Messages"]),
-            h("input", { type: "text", onchange: field.handler, value: field.value.toString() }, []),
-            h("div.output", [field.value]),
-        ]);
-    });
-    const proj = createTestProjector(F.stateRenderer);
-    const input = proj.query("input");
-    t.truthy(input.exists);
-    input.simulate.change({ value: "2" });
-    t.truthy(F.getField("test").value === "2");
-    proj.initialize(F.stateRenderer);
-    t.is(proj.query(".output").textContent, "2");
-});
-test("register view async", (t) => {
-    const F = new FRETS(new SimpleProps(), new SimpleActions());
-    function asyncViewFunction(app) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return new Promise((resolve, reject) => {
-                // simulate view rendering code being loaded async like from a webpack chunk
-                setTimeout(() => {
-                    resolve(h("div", [
-                        h("ul", app.modelProps.messages.map((x) => h("li", [x.toString()]))),
-                    ]));
-                }, 50);
+test('state updates async model', t => {
+    const mainApp = setup(new SimpleProps(), f => {
+        f.registerAcceptor((proposal, state) => {
+            var _a;
+            if ((_a = proposal) === null || _a === void 0 ? void 0 : _a.messages.length) {
+                f.modelProps.messages = proposal.messages;
+                state(f.modelProps);
+            }
+            setTimeout(() => {
+                f.modelProps.messages = ['done'];
+                state(Object.assign({}, f.modelProps));
+            }, 50);
+        });
+        const timeoutdone = f.registerAction('timeoutdone', (e, present) => {
+            present({
+                messages: ['loading']
             });
         });
-    }
-    F.registerViewAsync(asyncViewFunction);
-    const proj = createTestProjector(F.stateRenderer);
-    const list = proj.query("ul");
-    t.truthy(list.exists);
+        f.registerView((app) => {
+            return h('div', [
+                h('button', {
+                    onclick: timeoutdone
+                }, ['Load Messages']),
+                h('ul', app.modelProps.messages.map(x => h('li', [x.toString()])))
+            ]);
+        });
+    });
+    const proj = createTestProjector(mainApp.stateRenderer);
+    const list = proj.query('ul');
+    t.falsy(list.children.length);
+    proj.query('button').simulate.click();
+    t.truthy(list.children.length);
+    t.is(list.children[0].text, 'loading');
+    setTimeout(() => {
+        const list2 = proj.query('ul');
+        t.truthy(list2.children.length);
+        t.is(list2.children[0].text, 'done');
+    }, 100);
 });
-test("registers a route and changes when navigating", (t) => {
-    const F = new FRETS(new SimpleProps(), new SimpleActions());
-    F.registerView((app) => {
-        return h("div", [
-            (!app.modelProps.activeScreen || app.modelProps.activeScreen === SimpleScreens.Home)
-                ? h("h1", ["Home Page"])
-                : h("h1", ["About Page"]),
-        ]);
+test('registers a field', t => {
+    const mainApp = setup(new SimpleProps(), f => {
+        const field = f.registerField('test', '0');
+        t.is(f.modelProps.registeredFieldsValues.test, '0');
+        t.is(field.value, '0');
     });
-    F.registerRoute("home", "/home", (name, params, props) => {
-        return Object.assign({}, props, { activeScreen: SimpleScreens.Home });
-    });
-    F.registerRoute("about", "/about", (name, params, props) => {
-        return Object.assign({}, props, { activeScreen: SimpleScreens.About });
-    });
-    t.is(F.getRouteLink("about"), "/about");
-    t.false(F.getRouteLink("xyz"));
-    const proj = createTestProjector(F.stateRenderer);
-    t.is(proj.query("h1").textContent, "Home Page");
-    F.navToPath("/about");
-    window.dispatchEvent(new Event("popstate"));
-    t.is(proj.query("h1").textContent, "About Page");
-    F.navToRoute("home");
-    window.dispatchEvent(new Event("popstate"));
-    t.is(proj.query("h1").textContent, "Home Page");
 });
-test("model props can only be updated through an action", (t) => {
-    const F = new FRETS(new SimpleProps(), new SimpleActions());
-    F.registerView((app) => {
-        // try overwriting something in modelProps
-        t.throws(() => app.modelProps.messages.push("try"));
-        return h("div", [
-            (!app.modelProps.activeScreen || app.modelProps.activeScreen === SimpleScreens.Home)
-                ? h("h1", ["Home Page"])
-                : h("h1", ["About Page"]),
-            h("ul", app.modelProps.messages.map((x) => h("li", [x]))),
-        ]);
+// Test("registers and updates a field", (t) => {
+//   const mainApp = setup<SimpleProps>(new SimpleProps(), (f) => {
+//     const field = f.registerField("test", "0");
+//     t.is(field.value, "0");
+//     f.registerView((app: main): VNode => {
+//       return h("div", [
+//         h("button", ["Load Messages"]),
+//         h("input", {type: "text", onchange: field.handler, value: field.value.toString()}, []),
+//         h("div.output", [field.value]),
+//       ]);
+//     });
+//   });
+//   const proj = createTestProjector(mainApp.stateRenderer);
+//   const input = proj.query("input");
+//   t.truthy(input.exists);
+//   input.simulate.change({ value: "2"});
+//   proj.initialize(mainApp.stateRenderer);
+//   t.is(proj.query(".output").textContent, "2");
+// });
+// test("register view async", (t) => {
+//   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
+//   async function asyncViewFunction(app: main): Promise<VNode> {
+//     return new Promise<VNode>((resolve, reject) => {
+//       // simulate view rendering code being loaded async like from a webpack chunk
+//       setTimeout(() => {
+//         resolve(h("div", [
+//           h("ul", app.modelProps.messages.map((x) => h("li", [x.toString()]))),
+//         ]));
+//       }, 50);
+//     });
+//   }
+//   F.registerViewAsync(asyncViewFunction);
+//   const proj = createTestProjector(F.stateRenderer);
+//   const list = proj.query("ul");
+//   t.truthy(list.exists);
+// });
+test('registers a route and changes when navigating', t => {
+    const mainApp = setup(new SimpleProps(), f => {
+        f.registerAcceptor((proposal, state) => {
+            if (proposal.activeScreen) {
+                f.modelProps.activeScreen = proposal.activeScreen;
+                state(f.modelProps);
+            }
+        });
+        f.registerRouteAction('home', '/home', (context, propose) => {
+            propose({
+                activeScreen: SimpleScreens.Home
+            });
+        });
+        f.registerRouteAction('about', '/about', (context, propose) => {
+            propose({
+                activeScreen: SimpleScreens.About
+            });
+        });
+        f.registerView((app) => {
+            return h('div', [
+                !app.modelProps.activeScreen ||
+                app.modelProps.activeScreen === SimpleScreens.Home ?
+                h('h1', ['Home Page']) :
+                h('h1', ['About Page'])
+            ]);
+        });
     });
-    t.not(F.modelProps.messages[0], "try");
-    const proj = createTestProjector(F.stateRenderer);
-    const msgs = proj.query("ul>li");
-    t.falsy(msgs.exists());
-    t.not(F.modelProps.messages[0], "try");
+    t.is(mainApp.fretsApp.getRouteLink('about'), '/about');
+    t.false(mainApp.fretsApp.getRouteLink('xyz'));
+    const proj = createTestProjector(mainApp.stateRenderer);
+    t.is(proj.query('h1').textContent, 'Home Page');
+    mainApp.fretsApp.navToPath('/about');
+    window.dispatchEvent(new Event('popstate'));
+    t.is(proj.query('h1').textContent, 'About Page');
+    mainApp.fretsApp.navToRoute('home');
+    window.dispatchEvent(new Event('popstate'));
+    t.is(proj.query('h1').textContent, 'Home Page');
 });
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiRnJldHMuc3BlYy5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbIi4uLy4uL3NyYy9GcmV0cy5zcGVjLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7Ozs7Ozs7O0FBQUEsT0FBTyxJQUFJLE1BQU0sS0FBSyxDQUFDO0FBQ3ZCLE9BQU8sRUFBRSxpQkFBaUIsRUFBRSxLQUFLLEVBQWUsZUFBZSxFQUFFLE1BQU0sT0FBTyxDQUFDO0FBQy9FLE9BQU8sRUFBRSxDQUFDLEVBQVMsTUFBTSxVQUFVLENBQUM7QUFDcEMsT0FBTyxFQUFFLG1CQUFtQixFQUFFLE1BQU0sZ0JBQWdCLENBQUM7QUFFckQsSUFBSyxhQUtKO0FBTEQsV0FBSyxhQUFhO0lBQ2hCLG1EQUFLLENBQUE7SUFDTCwrQ0FBRyxDQUFBO0lBQ0gsaURBQUksQ0FBQTtJQUNKLG1EQUFLLENBQUE7QUFDUCxDQUFDLEVBTEksYUFBYSxLQUFiLGFBQWEsUUFLakI7QUFFRCxNQUFNLFdBQVksU0FBUSxlQUFlO0lBQXpDOztRQUNTLGFBQVEsR0FBYSxFQUFFLENBQUM7UUFHeEIsZUFBVSxHQUFXLENBQUMsQ0FBQztJQUNoQyxDQUFDO0NBQUE7QUFJRCxnREFBZ0Q7QUFDaEQsTUFBTSxhQUFjLFNBQVEsaUJBQWlCO0NBSTVDO0FBRUQsSUFBSSxDQUFDLHFDQUFxQyxFQUFFLENBQUMsQ0FBQyxFQUFFLEVBQUU7SUFDL0MsTUFBTSxDQUFDLEdBQUcsSUFBSSxLQUFLLENBQTZCLElBQUksV0FBVyxFQUFFLEVBQUUsSUFBSSxhQUFhLEVBQUUsQ0FBQyxDQUFDO0lBQ3hGLENBQUMsQ0FBQyxNQUFNLENBQUMsQ0FBQyxDQUFDLE1BQU0sQ0FBQyxDQUFDO0FBQ3RCLENBQUMsQ0FBQyxDQUFDO0FBRUgsSUFBSSxDQUFDLHFCQUFxQixFQUFFLENBQUMsQ0FBQyxFQUFFLEVBQUU7SUFDaEMsTUFBTSxDQUFDLEdBQUcsSUFBSSxLQUFLLENBQTZCLElBQUksV0FBVyxFQUFFLEVBQUUsSUFBSSxhQUFhLEVBQUUsQ0FBQyxDQUFDO0lBQ3hGLE1BQU0sSUFBSSxHQUFHLG1CQUFtQixDQUFDLENBQUMsQ0FBQyxhQUFhLENBQUMsQ0FBQztJQUNsRCxDQUFDLENBQUMsSUFBSSxDQUFDLElBQUksQ0FBQyxLQUFLLENBQUMsYUFBYSxDQUFDLENBQUMsTUFBTSxFQUFFLENBQUMsQ0FBQztBQUM3QyxDQUFDLENBQUMsQ0FBQztBQUVILElBQUksQ0FBQyxzQkFBc0IsRUFBRSxDQUFDLENBQUMsRUFBRSxFQUFFO0lBQ2pDLE1BQU0sQ0FBQyxHQUFHLElBQUksS0FBSyxDQUE2QixJQUFJLFdBQVcsRUFBRSxFQUFFLElBQUksYUFBYSxFQUFFLENBQUMsQ0FBQztJQUN4RixDQUFDLENBQUMsT0FBTyxDQUFDLFdBQVcsR0FBRyxDQUFDLENBQUMsY0FBYyxDQUFDLENBQUMsQ0FBUSxFQUFFLEtBQTRCLEVBQUUsRUFBRTtRQUNsRix5QkFBVyxLQUFLLElBQUUsUUFBUSxFQUFFLENBQUMsTUFBTSxDQUFDLElBQUU7SUFDeEMsQ0FBQyxDQUFDLENBQUM7SUFDSCxDQUFDLENBQUMsWUFBWSxDQUFDLENBQUMsR0FBUyxFQUFTLEVBQUU7UUFDbEMsT0FBTyxDQUFDLENBQUMsS0FBSyxFQUFFO1lBQ2QsQ0FBQyxDQUFDLFFBQVEsRUFBRSxFQUFFLE9BQU8sRUFBRSxHQUFHLENBQUMsT0FBTyxDQUFDLFdBQVcsRUFBRSxFQUFFLENBQUMsZUFBZSxDQUFDLENBQUM7WUFDcEUsQ0FBQyxDQUFDLElBQUksRUFBRSxHQUFHLENBQUMsVUFBVSxDQUFDLFFBQVEsQ0FBQyxHQUFHLENBQUMsQ0FBQyxDQUFDLEVBQUUsRUFBRSxDQUFDLENBQUMsQ0FBQyxJQUFJLEVBQUUsQ0FBQyxDQUFDLENBQUMsUUFBUSxFQUFFLENBQUMsQ0FBQyxDQUFDLENBQUM7U0FDckUsQ0FBQyxDQUFDO0lBQ0wsQ0FBQyxDQUFDLENBQUM7SUFDSCxNQUFNLElBQUksR0FBRyxtQkFBbUIsQ0FBQyxDQUFDLENBQUMsYUFBYSxDQUFDLENBQUM7SUFDbEQsTUFBTSxJQUFJLEdBQUcsSUFBSSxDQUFDLEtBQUssQ0FBQyxJQUFJLENBQUMsQ0FBQztJQUM5QixDQUFDLENBQUMsS0FBSyxDQUFDLElBQUksQ0FBQyxRQUFRLENBQUMsTUFBTSxDQUFDLENBQUM7SUFDOUIsTUFBTSxNQUFNLEdBQUcsSUFBSSxDQUFDLEtBQUssQ0FBQyxRQUFRLENBQUMsQ0FBQztJQUNwQyxDQUFDLENBQUMsTUFBTSxDQUFDLE1BQU0sQ0FBQyxNQUFNLENBQUMsQ0FBQztJQUN4QixNQUFNLENBQUMsUUFBUSxDQUFDLEtBQUssRUFBRSxDQUFDO0lBQ3hCLENBQUMsQ0FBQyxNQUFNLENBQUMsSUFBSSxDQUFDLFFBQVEsQ0FBQyxNQUFNLENBQUMsQ0FBQztJQUMvQixDQUFDLENBQUMsS0FBSyxDQUFDLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQyxDQUFDLENBQUMsUUFBUSxDQUFDLENBQUM7SUFDbkMsQ0FBQyxDQUFDLEVBQUUsQ0FBQyxJQUFJLENBQUMsUUFBUSxDQUFDLENBQUMsQ0FBQyxDQUFDLElBQUksRUFBRSxNQUFNLENBQUMsQ0FBQztBQUV0QyxDQUFDLENBQUMsQ0FBQztBQUVILElBQUksQ0FBQywyQ0FBMkMsRUFBRSxDQUFDLENBQUMsRUFBRSxFQUFFO0lBQ3RELE1BQU0sQ0FBQyxHQUFHLElBQUksS0FBSyxDQUE2QixJQUFJLFdBQVcsRUFBRSxFQUFFLElBQUksYUFBYSxFQUFFLENBQUMsQ0FBQztJQUN4RixDQUFDLENBQUMsU0FBUyxHQUFHLENBQUMsUUFBcUIsRUFBRSxRQUFxQixFQUEwQixFQUFFO1FBQ3JGLElBQUksUUFBUSxDQUFDLFVBQVUsR0FBRyxDQUFDLEVBQUU7WUFDM0IsT0FBTyxtQkFBSyxRQUFRLElBQUUsUUFBUSxFQUFFLENBQUMsU0FBUyxDQUFDLEtBQUcsS0FBSyxDQUFDLENBQUM7U0FDdEQ7UUFDRCxPQUFPLENBQUMsUUFBUSxFQUFFLElBQUksQ0FBQyxDQUFDO0lBQzFCLENBQUMsQ0FBQztJQUNGLENBQUMsQ0FBQyxPQUFPLENBQUMsUUFBUSxHQUFHLENBQUMsQ0FBQyxjQUFjLENBQUMsQ0FBQyxDQUFRLEVBQUUsS0FBa0IsRUFBZSxFQUFFO1FBQ2xGLHlCQUFXLEtBQUssSUFBRSxVQUFVLEVBQUUsQ0FBQyxJQUFFO0lBQ25DLENBQUMsQ0FBQyxDQUFDO0lBQ0gsQ0FBQyxDQUFDLE9BQU8sQ0FBQyxVQUFVLEdBQUcsQ0FBQyxDQUFDLGNBQWMsQ0FBQyxDQUFDLENBQVEsRUFBRSxLQUFrQixFQUFlLEVBQUU7UUFDcEYseUJBQVcsS0FBSyxJQUFFLFVBQVUsRUFBRSxDQUFDLENBQUMsSUFBRztJQUNyQyxDQUFDLENBQUMsQ0FBQztJQUNILENBQUMsQ0FBQyxZQUFZLENBQUMsQ0FBQyxHQUFTLEVBQVMsRUFBRTtRQUNsQyxPQUFPLENBQUMsQ0FBQyxLQUFLLEVBQUU7WUFDZCxDQUFDLENBQUMsY0FBYyxFQUFFLEVBQUUsT0FBTyxFQUFFLEdBQUcsQ0FBQyxPQUFPLENBQUMsUUFBUSxFQUFFLEVBQUUsQ0FBQyxVQUFVLENBQUMsQ0FBQztZQUNsRSxDQUFDLENBQUMsZ0JBQWdCLEVBQUUsRUFBRSxPQUFPLEVBQUUsR0FBRyxDQUFDLE9BQU8sQ0FBQyxVQUFVLEVBQUUsRUFBRSxDQUFDLFdBQVcsQ0FBQyxDQUFDO1lBQ3ZFLENBQUMsQ0FBQyxJQUFJLEVBQUUsR0FBRyxDQUFDLFVBQVUsQ0FBQyxRQUFRLENBQUMsR0FBRyxDQUFDLENBQUMsQ0FBQyxFQUFFLEVBQUUsQ0FBQyxDQUFDLENBQUMsSUFBSSxFQUFFLENBQUMsQ0FBQyxDQUFDLFFBQVEsRUFBRSxDQUFDLENBQUMsQ0FBQyxDQUFDO1NBQ3JFLENBQUMsQ0FBQztJQUNMLENBQUMsQ0FBQyxDQUFDO0lBQ0gsTUFBTSxJQUFJLEdBQUcsbUJBQW1CLENBQUMsQ0FBQyxDQUFDLGFBQWEsQ0FBQyxDQUFDO0lBQ2xELE1BQU0sSUFBSSxHQUFHLElBQUksQ0FBQyxLQUFLLENBQUMsSUFBSSxDQUFDLENBQUM7SUFDOUIsQ0FBQyxDQUFDLEtBQUssQ0FBQyxJQUFJLENBQUMsUUFBUSxDQUFDLE1BQU0sQ0FBQyxDQUFDO0lBQzlCLE1BQU0sT0FBTyxHQUFHLElBQUksQ0FBQyxLQUFLLENBQUMsY0FBYyxDQUFDLENBQUM7SUFDM0MsTUFBTSxPQUFPLEdBQUcsSUFBSSxDQUFDLEtBQUssQ0FBQyxnQkFBZ0IsQ0FBQyxDQUFDO0lBQzdDLE9BQU8sQ0FBQyxRQUFRLENBQUMsS0FBSyxFQUFFLENBQUM7SUFDekIsQ0FBQyxDQUFDLEtBQUssQ0FBQyxJQUFJLENBQUMsUUFBUSxDQUFDLE1BQU0sQ0FBQyxDQUFDO0lBQzlCLE9BQU8sQ0FBQyxRQUFRLENBQUMsS0FBSyxFQUFFLENBQUM7SUFDekIsQ0FBQyxDQUFDLEVBQUUsQ0FBQyxJQUFJLENBQUMsUUFBUSxDQUFDLENBQUMsQ0FBQyxDQUFDLElBQUksRUFBRSxTQUFTLENBQUMsQ0FBQztBQUN6QyxDQUFDLENBQUMsQ0FBQztBQUVILElBQUksQ0FBQyxxQkFBcUIsRUFBRSxDQUFDLENBQUMsRUFBRSxFQUFFO0lBQ2hDLE1BQU0sQ0FBQyxHQUFHLElBQUksS0FBSyxDQUE2QixJQUFJLFdBQVcsRUFBRSxFQUFFLElBQUksYUFBYSxFQUFFLENBQUMsQ0FBQztJQUN4RixDQUFDLENBQUMsT0FBTyxDQUFDLFdBQVcsR0FBRyxDQUFDLENBQUMsY0FBYyxDQUFDLENBQUMsQ0FBUSxFQUFFLElBQTJCLEVBQWUsRUFBRTtRQUM5RixVQUFVLENBQUMsR0FBRyxFQUFFO1lBQ2QsQ0FBQyxDQUFDLE1BQU0sbUJBQ0gsSUFBSSxJQUNQLFFBQVEsRUFBRSxDQUFDLE9BQU8sQ0FBQyxJQUNuQixDQUFDO1FBQ0wsQ0FBQyxFQUFFLEVBQUUsQ0FBQyxDQUFDO1FBQ1AsT0FBTyxJQUFJLENBQUM7SUFDZCxDQUFDLENBQUMsQ0FBQztJQUNILENBQUMsQ0FBQyxZQUFZLENBQUMsQ0FBQyxHQUFTLEVBQVMsRUFBRTtRQUNsQyxPQUFPLENBQUMsQ0FBQyxLQUFLLEVBQUU7WUFDZCxDQUFDLENBQUMsUUFBUSxFQUFFLEVBQUUsT0FBTyxFQUFFLEdBQUcsQ0FBQyxPQUFPLENBQUMsV0FBVyxFQUFFLEVBQUUsQ0FBQyxlQUFlLENBQUMsQ0FBQztZQUNwRSxDQUFDLENBQUMsSUFBSSxFQUFFLEdBQUcsQ0FBQyxVQUFVLENBQUMsUUFBUSxDQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUMsRUFBRSxFQUFFLENBQUMsQ0FBQyxDQUFDLElBQUksRUFBRSxDQUFDLENBQUMsQ0FBQyxRQUFRLEVBQUUsQ0FBQyxDQUFDLENBQUMsQ0FBQztTQUNyRSxDQUFDLENBQUM7SUFDTCxDQUFDLENBQUMsQ0FBQztJQUVILE1BQU0sSUFBSSxHQUFHLG1CQUFtQixDQUFDLENBQUMsQ0FBQyxhQUFhLENBQUMsQ0FBQztJQUNsRCxNQUFNLElBQUksR0FBRyxJQUFJLENBQUMsS0FBSyxDQUFDLElBQUksQ0FBQyxDQUFDO0lBQzlCLENBQUMsQ0FBQyxLQUFLLENBQUMsSUFBSSxDQUFDLFFBQVEsQ0FBQyxNQUFNLENBQUMsQ0FBQztJQUM5QixJQUFJLENBQUMsS0FBSyxDQUFDLFFBQVEsQ0FBQyxDQUFDLFFBQVEsQ0FBQyxLQUFLLEVBQUUsQ0FBQztJQUN0QyxVQUFVLENBQUMsR0FBRyxFQUFFO1FBQ2QsTUFBTSxLQUFLLEdBQUcsSUFBSSxDQUFDLEtBQUssQ0FBQyxJQUFJLENBQUMsQ0FBQztRQUMvQixDQUFDLENBQUMsTUFBTSxDQUFDLEtBQUssQ0FBQyxRQUFRLENBQUMsTUFBTSxDQUFDLENBQUM7UUFDaEMsQ0FBQyxDQUFDLEVBQUUsQ0FBQyxLQUFLLENBQUMsUUFBUSxDQUFDLENBQUMsQ0FBQyxDQUFDLElBQUksRUFBRSxPQUFPLENBQUMsQ0FBQztJQUN4QyxDQUFDLEVBQUUsR0FBRyxDQUFDLENBQUM7QUFDVixDQUFDLENBQUMsQ0FBQztBQUVILElBQUksQ0FBQyxtQkFBbUIsRUFBRSxDQUFDLENBQUMsRUFBRSxFQUFFO0lBQzlCLE1BQU0sQ0FBQyxHQUFHLElBQUksS0FBSyxDQUE2QixJQUFJLFdBQVcsRUFBRSxFQUFFLElBQUksYUFBYSxFQUFFLENBQUMsQ0FBQztJQUN4RixDQUFDLENBQUMsYUFBYSxDQUFDLE1BQU0sRUFBRSxHQUFHLENBQUMsQ0FBQztJQUM3QixDQUFDLENBQUMsRUFBRSxDQUFDLENBQUMsQ0FBQyxVQUFVLENBQUMsc0JBQXNCLENBQUMsTUFBTSxDQUFDLEVBQUUsR0FBRyxDQUFDLENBQUM7SUFDdkQsTUFBTSxLQUFLLEdBQUcsQ0FBQyxDQUFDLFFBQVEsQ0FBQyxNQUFNLENBQUMsQ0FBQztJQUNqQyxDQUFDLENBQUMsRUFBRSxDQUFDLEtBQUssQ0FBQyxLQUFLLEVBQUUsR0FBRyxDQUFDLENBQUM7QUFDekIsQ0FBQyxDQUFDLENBQUM7QUFFSCxJQUFJLENBQUMsK0JBQStCLEVBQUUsQ0FBQyxDQUFDLEVBQUUsRUFBRTtJQUMxQyxNQUFNLENBQUMsR0FBRyxJQUFJLEtBQUssQ0FBNkIsSUFBSSxXQUFXLEVBQUUsRUFBRSxJQUFJLGFBQWEsRUFBRSxDQUFDLENBQUM7SUFDeEYsQ0FBQyxDQUFDLGFBQWEsQ0FBQyxNQUFNLEVBQUUsR0FBRyxDQUFDLENBQUM7SUFDN0IsQ0FBQyxDQUFDLEVBQUUsQ0FBQyxDQUFDLENBQUMsVUFBVSxDQUFDLHNCQUFzQixDQUFDLE1BQU0sQ0FBQyxFQUFFLEdBQUcsQ0FBQyxDQUFDO0lBRXZELENBQUMsQ0FBQyxZQUFZLENBQUMsQ0FBQyxHQUFTLEVBQVMsRUFBRTtRQUNsQyxNQUFNLEtBQUssR0FBRyxHQUFHLENBQUMsUUFBUSxDQUFDLE1BQU0sQ0FBQyxDQUFDO1FBQ25DLE9BQU8sQ0FBQyxDQUFDLEtBQUssRUFBRTtZQUNkLENBQUMsQ0FBQyxRQUFRLEVBQUUsRUFBRSxPQUFPLEVBQUUsR0FBRyxDQUFDLE9BQU8sQ0FBQyxXQUFXLEVBQUUsRUFBRSxDQUFDLGVBQWUsQ0FBQyxDQUFDO1lBQ3BFLENBQUMsQ0FBQyxPQUFPLEVBQUUsRUFBQyxJQUFJLEVBQUUsTUFBTSxFQUFFLFFBQVEsRUFBRSxLQUFLLENBQUMsT0FBTyxFQUFFLEtBQUssRUFBRSxLQUFLLENBQUMsS0FBSyxDQUFDLFFBQVEsRUFBRSxFQUFDLEVBQUUsRUFBRSxDQUFDO1lBQ3RGLENBQUMsQ0FBQyxZQUFZLEVBQUUsQ0FBQyxLQUFLLENBQUMsS0FBSyxDQUFDLENBQUM7U0FDL0IsQ0FBQyxDQUFDO0lBQ0wsQ0FBQyxDQUFDLENBQUM7SUFDSCxNQUFNLElBQUksR0FBRyxtQkFBbUIsQ0FBQyxDQUFDLENBQUMsYUFBYSxDQUFDLENBQUM7SUFDbEQsTUFBTSxLQUFLLEdBQUcsSUFBSSxDQUFDLEtBQUssQ0FBQyxPQUFPLENBQUMsQ0FBQztJQUNsQyxDQUFDLENBQUMsTUFBTSxDQUFDLEtBQUssQ0FBQyxNQUFNLENBQUMsQ0FBQztJQUN2QixLQUFLLENBQUMsUUFBUSxDQUFDLE1BQU0sQ0FBQyxFQUFFLEtBQUssRUFBRSxHQUFHLEVBQUMsQ0FBQyxDQUFDO0lBQ3JDLENBQUMsQ0FBQyxNQUFNLENBQUMsQ0FBQyxDQUFDLFFBQVEsQ0FBQyxNQUFNLENBQUMsQ0FBQyxLQUFLLEtBQUssR0FBRyxDQUFDLENBQUM7SUFDM0MsSUFBSSxDQUFDLFVBQVUsQ0FBQyxDQUFDLENBQUMsYUFBYSxDQUFDLENBQUM7SUFDakMsQ0FBQyxDQUFDLEVBQUUsQ0FBQyxJQUFJLENBQUMsS0FBSyxDQUFDLFNBQVMsQ0FBQyxDQUFDLFdBQVcsRUFBRSxHQUFHLENBQUMsQ0FBQztBQUMvQyxDQUFDLENBQUMsQ0FBQztBQUVILElBQUksQ0FBQyxxQkFBcUIsRUFBRSxDQUFDLENBQUMsRUFBRSxFQUFFO0lBQ2hDLE1BQU0sQ0FBQyxHQUFHLElBQUksS0FBSyxDQUE2QixJQUFJLFdBQVcsRUFBRSxFQUFFLElBQUksYUFBYSxFQUFFLENBQUMsQ0FBQztJQUN4RixTQUFlLGlCQUFpQixDQUFDLEdBQVM7O1lBQ3hDLE9BQU8sSUFBSSxPQUFPLENBQVEsQ0FBQyxPQUFPLEVBQUUsTUFBTSxFQUFFLEVBQUU7Z0JBQzVDLDRFQUE0RTtnQkFDNUUsVUFBVSxDQUFDLEdBQUcsRUFBRTtvQkFDZCxPQUFPLENBQUMsQ0FBQyxDQUFDLEtBQUssRUFBRTt3QkFDZixDQUFDLENBQUMsSUFBSSxFQUFFLEdBQUcsQ0FBQyxVQUFVLENBQUMsUUFBUSxDQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUMsRUFBRSxFQUFFLENBQUMsQ0FBQyxDQUFDLElBQUksRUFBRSxDQUFDLENBQUMsQ0FBQyxRQUFRLEVBQUUsQ0FBQyxDQUFDLENBQUMsQ0FBQztxQkFDckUsQ0FBQyxDQUFDLENBQUM7Z0JBQ04sQ0FBQyxFQUFFLEVBQUUsQ0FBQyxDQUFDO1lBQ1QsQ0FBQyxDQUFDLENBQUM7UUFDTCxDQUFDO0tBQUE7SUFFRCxDQUFDLENBQUMsaUJBQWlCLENBQUMsaUJBQWlCLENBQUMsQ0FBQztJQUN2QyxNQUFNLElBQUksR0FBRyxtQkFBbUIsQ0FBQyxDQUFDLENBQUMsYUFBYSxDQUFDLENBQUM7SUFDbEQsTUFBTSxJQUFJLEdBQUcsSUFBSSxDQUFDLEtBQUssQ0FBQyxJQUFJLENBQUMsQ0FBQztJQUM5QixDQUFDLENBQUMsTUFBTSxDQUFDLElBQUksQ0FBQyxNQUFNLENBQUMsQ0FBQztBQUN4QixDQUFDLENBQUMsQ0FBQztBQUVILElBQUksQ0FBQywrQ0FBK0MsRUFBRSxDQUFDLENBQUMsRUFBRSxFQUFFO0lBQzFELE1BQU0sQ0FBQyxHQUFHLElBQUksS0FBSyxDQUE2QixJQUFJLFdBQVcsRUFBRSxFQUFFLElBQUksYUFBYSxFQUFFLENBQUMsQ0FBQztJQUN4RixDQUFDLENBQUMsWUFBWSxDQUFDLENBQUMsR0FBRyxFQUFTLEVBQUU7UUFDNUIsT0FBTyxDQUFDLENBQUMsS0FBSyxFQUFFO1lBQ2QsQ0FBQyxDQUFDLEdBQUcsQ0FBQyxVQUFVLENBQUMsWUFBWSxJQUFJLEdBQUcsQ0FBQyxVQUFVLENBQUMsWUFBWSxLQUFLLGFBQWEsQ0FBQyxJQUFJLENBQUM7Z0JBQ2xGLENBQUMsQ0FBQyxDQUFDLENBQUMsSUFBSSxFQUFFLENBQUMsV0FBVyxDQUFDLENBQUM7Z0JBQ3hCLENBQUMsQ0FBQyxDQUFDLENBQUMsSUFBSSxFQUFFLENBQUMsWUFBWSxDQUFDLENBQUM7U0FDNUIsQ0FBQyxDQUFDO0lBQ0wsQ0FBQyxDQUFDLENBQUM7SUFDSCxDQUFDLENBQUMsYUFBYSxDQUFDLE1BQU0sRUFBRSxPQUFPLEVBQUUsQ0FBQyxJQUFJLEVBQUUsTUFBTSxFQUFFLEtBQUssRUFBZSxFQUFFO1FBQ3BFLHlCQUNLLEtBQUssSUFDUixZQUFZLEVBQUUsYUFBYSxDQUFDLElBQUksSUFDaEM7SUFDSixDQUFDLENBQUMsQ0FBQztJQUNILENBQUMsQ0FBQyxhQUFhLENBQUMsT0FBTyxFQUFFLFFBQVEsRUFBRSxDQUFDLElBQUksRUFBRSxNQUFNLEVBQUUsS0FBSyxFQUFlLEVBQUU7UUFDdEUseUJBQ0ssS0FBSyxJQUNSLFlBQVksRUFBRSxhQUFhLENBQUMsS0FBSyxJQUNqQztJQUNKLENBQUMsQ0FBQyxDQUFDO0lBQ0gsQ0FBQyxDQUFDLEVBQUUsQ0FBQyxDQUFDLENBQUMsWUFBWSxDQUFDLE9BQU8sQ0FBQyxFQUFFLFFBQVEsQ0FBQyxDQUFDO0lBQ3hDLENBQUMsQ0FBQyxLQUFLLENBQUMsQ0FBQyxDQUFDLFlBQVksQ0FBQyxLQUFLLENBQUMsQ0FBQyxDQUFDO0lBQy9CLE1BQU0sSUFBSSxHQUFHLG1CQUFtQixDQUFDLENBQUMsQ0FBQyxhQUFhLENBQUMsQ0FBQztJQUNsRCxDQUFDLENBQUMsRUFBRSxDQUFDLElBQUksQ0FBQyxLQUFLLENBQUMsSUFBSSxDQUFDLENBQUMsV0FBVyxFQUFFLFdBQVcsQ0FBQyxDQUFDO0lBQ2hELENBQUMsQ0FBQyxTQUFTLENBQUMsUUFBUSxDQUFDLENBQUM7SUFDdEIsTUFBTSxDQUFDLGFBQWEsQ0FBQyxJQUFJLEtBQUssQ0FBQyxVQUFVLENBQUMsQ0FBQyxDQUFDO0lBQzVDLENBQUMsQ0FBQyxFQUFFLENBQUMsSUFBSSxDQUFDLEtBQUssQ0FBQyxJQUFJLENBQUMsQ0FBQyxXQUFXLEVBQUUsWUFBWSxDQUFDLENBQUM7SUFDakQsQ0FBQyxDQUFDLFVBQVUsQ0FBQyxNQUFNLENBQUMsQ0FBQztJQUNyQixNQUFNLENBQUMsYUFBYSxDQUFDLElBQUksS0FBSyxDQUFDLFVBQVUsQ0FBQyxDQUFDLENBQUM7SUFDNUMsQ0FBQyxDQUFDLEVBQUUsQ0FBQyxJQUFJLENBQUMsS0FBSyxDQUFDLElBQUksQ0FBQyxDQUFDLFdBQVcsRUFBRSxXQUFXLENBQUMsQ0FBQztBQUNsRCxDQUFDLENBQUMsQ0FBQztBQUVILElBQUksQ0FBQyxtREFBbUQsRUFBRSxDQUFDLENBQUMsRUFBRSxFQUFFO0lBQzlELE1BQU0sQ0FBQyxHQUFHLElBQUksS0FBSyxDQUE2QixJQUFJLFdBQVcsRUFBRSxFQUFFLElBQUksYUFBYSxFQUFFLENBQUMsQ0FBQztJQUN4RixDQUFDLENBQUMsWUFBWSxDQUFDLENBQUMsR0FBRyxFQUFTLEVBQUU7UUFDNUIsMENBQTBDO1FBQzFDLENBQUMsQ0FBQyxNQUFNLENBQUMsR0FBRyxFQUFFLENBQUMsR0FBRyxDQUFDLFVBQVUsQ0FBQyxRQUFRLENBQUMsSUFBSSxDQUFDLEtBQUssQ0FBQyxDQUFDLENBQUM7UUFFcEQsT0FBTyxDQUFDLENBQUMsS0FBSyxFQUFFO1lBQ2QsQ0FBQyxDQUFDLEdBQUcsQ0FBQyxVQUFVLENBQUMsWUFBWSxJQUFJLEdBQUcsQ0FBQyxVQUFVLENBQUMsWUFBWSxLQUFLLGFBQWEsQ0FBQyxJQUFJLENBQUM7Z0JBQ2xGLENBQUMsQ0FBQyxDQUFDLENBQUMsSUFBSSxFQUFFLENBQUMsV0FBVyxDQUFDLENBQUM7Z0JBQ3hCLENBQUMsQ0FBQyxDQUFDLENBQUMsSUFBSSxFQUFFLENBQUMsWUFBWSxDQUFDLENBQUM7WUFDM0IsQ0FBQyxDQUFDLElBQUksRUFBRSxHQUFHLENBQUMsVUFBVSxDQUFDLFFBQVEsQ0FBQyxHQUFHLENBQUMsQ0FBQyxDQUFTLEVBQUUsRUFBRSxDQUFDLENBQUMsQ0FBQyxJQUFJLEVBQUUsQ0FBQyxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUM7U0FDbEUsQ0FBQyxDQUFDO0lBQ0wsQ0FBQyxDQUFDLENBQUM7SUFDSCxDQUFDLENBQUMsR0FBRyxDQUFDLENBQUMsQ0FBQyxVQUFVLENBQUMsUUFBUSxDQUFDLENBQUMsQ0FBQyxFQUFFLEtBQUssQ0FBQyxDQUFDO0lBQ3ZDLE1BQU0sSUFBSSxHQUFHLG1CQUFtQixDQUFDLENBQUMsQ0FBQyxhQUFhLENBQUMsQ0FBQztJQUNsRCxNQUFNLElBQUksR0FBRyxJQUFJLENBQUMsS0FBSyxDQUFDLE9BQU8sQ0FBQyxDQUFDO0lBQ2pDLENBQUMsQ0FBQyxLQUFLLENBQUMsSUFBSSxDQUFDLE1BQU0sRUFBRSxDQUFDLENBQUM7SUFDdkIsQ0FBQyxDQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUMsVUFBVSxDQUFDLFFBQVEsQ0FBQyxDQUFDLENBQUMsRUFBRSxLQUFLLENBQUMsQ0FBQztBQUN6QyxDQUFDLENBQUMsQ0FBQyJ9
+// Test("model props can only be updated through an action", (t) => {
+//   const F = new FRETS<SimpleProps, SimpleActions>(new SimpleProps(), new SimpleActions());
+//   F.registerView((app): VNode => {
+//     // try overwriting something in modelProps
+//     t.throws(() => app.modelProps.messages.push("try"));
+//     return h("div", [
+//       (!app.modelProps.activeScreen || app.modelProps.activeScreen === SimpleScreens.Home)
+//         ? h("h1", ["Home Page"])
+//         : h("h1", ["About Page"]),
+//       h("ul", app.modelProps.messages.map((x: string) => h("li", [x]))),
+//     ]);
+//   });
+//   t.not(F.modelProps.messages[0], "try");
+//   const proj = createTestProjector(F.stateRenderer);
+//   const msgs = proj.query("ul>li");
+//   t.falsy(msgs.exists());
+//   t.not(F.modelProps.messages[0], "try");
+// });
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiRnJldHMuc3BlYy5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbIi4uLy4uL3NyYy9GcmV0cy5zcGVjLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQUFBLE9BQU8sSUFBSSxNQUFNLEtBQUssQ0FBQztBQUN2QixPQUFPLEVBRU4sZUFBZSxFQUNmLEtBQUssRUFDTCxNQUFNLE9BQU8sQ0FBQztBQUNmLE9BQU8sRUFBQyxDQUFDLEVBQVEsTUFBTSxVQUFVLENBQUM7QUFDbEMsT0FBTyxFQUFDLG1CQUFtQixFQUFDLE1BQU0sZ0JBQWdCLENBQUM7QUFFbkQsSUFBSyxhQUtKO0FBTEQsV0FBSyxhQUFhO0lBQ2pCLG1EQUFLLENBQUE7SUFDTCwrQ0FBRyxDQUFBO0lBQ0gsaURBQUksQ0FBQTtJQUNKLG1EQUFLLENBQUE7QUFDTixDQUFDLEVBTEksYUFBYSxLQUFiLGFBQWEsUUFLakI7QUFFRCxNQUFNLFdBQVksU0FBUSxlQUFlO0lBQXpDOztRQUNRLGFBQVEsR0FBYSxFQUFFLENBQUM7UUFHeEIsZUFBVSxHQUFHLENBQUMsQ0FBQztJQUN2QixDQUFDO0NBQUE7QUFJRCxJQUFJLENBQUMscUNBQXFDLEVBQUUsQ0FBQyxDQUFDLEVBQUU7SUFDL0MsTUFBTSxHQUFHLEdBQUcsS0FBSyxDQUFjLElBQUksV0FBVyxFQUFFLEVBQUUsQ0FBQyxDQUFPLEVBQUUsRUFBRTtRQUM3RCxDQUFDLENBQUMsTUFBTSxDQUFDLENBQUMsQ0FBQyxVQUFVLENBQUMsQ0FBQztRQUN2QixDQUFDLENBQUMsTUFBTSxDQUFDLENBQUMsQ0FBQyxVQUFVLENBQUMsUUFBUSxDQUFDLENBQUM7SUFDakMsQ0FBQyxDQUFDLENBQUM7SUFDSCxDQUFDLENBQUMsTUFBTSxDQUFDLEdBQUcsQ0FBQyxPQUFPLENBQUMsQ0FBQztBQUN2QixDQUFDLENBQUMsQ0FBQztBQUVILHVDQUF1QztBQUV2QyxNQUFNO0FBRU4sSUFBSSxDQUFDLHNCQUFzQixFQUFFLENBQUMsQ0FBQyxFQUFFO0lBQ2hDLE1B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

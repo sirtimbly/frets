@@ -16,16 +16,16 @@
         "experimentalDecorators": true,
         "allowSyntheticDefaultImports": false,
         "baseUrl": ".", // required for "paths",
-        "paths": {
-            "frets": [
-                "src/index.ts"
-            ] // write tests without relative paths
-        }
+        // "paths": {
+        //     "frets": [
+        //         "src/index.ts"
+        //     ] // write tests without relative paths
+        // }
     },
     "include": [
         "src/**/*.ts"
     ],
     "exclude": [
         "node_modules/**"
-      ]
+    ]
 }

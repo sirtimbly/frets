@@ -16,7 +16,6 @@ footer: MIT Licensed | Copyright © 2017-present Tim Bendt
 ---
 
 
-
-Build SPAs entirely out of pure functions with the safety and productivity of TypeScript.
+A chainable API of programmer-friendly abstractions for building UIs without HTML. Enjoy the safety and productivity of TypeScript in your UI code.
 
 
