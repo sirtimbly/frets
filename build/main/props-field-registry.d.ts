@@ -1,5 +1,4 @@
 export declare class PropsWithFields {
-    constructor(data?: any);
     registeredFieldsValues: {
         [key: string]: any;
     };
@@ -11,4 +10,5 @@ export declare class PropsWithFields {
     registeredFieldValidationErrors: {
         [key: string]: string[];
     };
+    constructor(data?: any);
 }

@@ -865,6 +865,7 @@ var createMapping = function (getSourceKey, createResult, updateResult) {
 
 
 var index = /*#__PURE__*/Object.freeze({
+    __proto__: null,
     dom: dom,
     h: h,
     createProjector: createProjector,
@@ -1381,7 +1382,8 @@ var Path = /** @class */ (function () {
 }());
 
 function setup(modelProps, setupFn, opts) {
-    const projector = opts && opts.projector || createProjector();
+    var _a;
+    const projector = ((_a = opts) === null || _a === void 0 ? void 0 : _a.projector) || createProjector();
     const routes = {};
     /**
      * Returns a path when given the key of a route that was previously registered.
@@ -1397,7 +1399,7 @@ function setup(modelProps, setupFn, opts) {
     }
     /**
      * Change the browser location to match the path configured in the route with the
-     * provided key. You still need to call an action to udpate state before the UI will re-render.
+     * provided key. You still need to call an action to update state before the UI will re-render.
      * @param  {string} key
      * @param  {any} data?
      */
@@ -1413,17 +1415,18 @@ function setup(modelProps, setupFn, opts) {
      */
     function navToPath(path) {
         try {
-            window.history.pushState(modelProps, "", path);
+            window.history.pushState(modelProps, '', path);
         }
         catch (error) {
+            console.warn('Error routing', error);
             window.location.pathname = path;
         }
-        applyRouteFunction(modelProps);
+        applyRouteFunction();
     }
     const modelPresenters = {};
     function modelPresenter(proposal) {
         for (const key in modelPresenters) {
-            if (modelPresenters.hasOwnProperty(key)) {
+            if (Object.prototype.hasOwnProperty.call(modelPresenters, key)) {
                 const accept = modelPresenters[key];
                 accept(proposal);
             }
@@ -1436,10 +1439,10 @@ function setup(modelProps, setupFn, opts) {
         };
     }
     function registerRouteAction(key, path, actionFn) {
-        // console.log("register route", key, path)
+        // Console.log("register route", key, path)
         routes[key] = {
             calculator: actionFn,
-            spec: new Path(path),
+            spec: new Path(path)
         };
     }
     function registerAcceptor(presenterFn) {
@@ -1450,7 +1453,7 @@ function setup(modelProps, setupFn, opts) {
             };
         }
     }
-    // function registerView(renderFn: (fretsApp: IFunFrets<T>) => VNode) {
+    // Function registerView(renderFn: (fretsApp: IFunFrets<T>) => VNode) {
     //   stateRenderer = () => {
     //     console.log("calling renderView fn", F)
     //     return renderFn(F);
@@ -1475,7 +1478,7 @@ function setup(modelProps, setupFn, opts) {
             }
             modelProps.registeredFieldsValues[key] = val;
             if (val.length > 0) {
-                modelProps.registeredFieldsState[key].dirty = true; // latching switch
+                modelProps.registeredFieldsState[key].dirty = true; // Latching switch
             }
             if (!skipValidation) {
                 validate();
@@ -1485,7 +1488,7 @@ function setup(modelProps, setupFn, opts) {
             if (validation) {
                 const val = modelProps.registeredFieldsValues[key];
                 const errors = [];
-                if (validation.notEmpty && (!val || val === "")) {
+                if (validation.notEmpty && (!val || val === '')) {
                     errors.push(validation.notEmpty.message);
                 }
                 if (validation.minLength && val.length < validation.minLength.value) {
@@ -1498,13 +1501,13 @@ function setup(modelProps, setupFn, opts) {
             }
         }
         if (modelProps.registeredFieldsValues[key] === undefined) {
-            modelProps.registeredFieldsValues[key] = initialValue || "";
+            modelProps.registeredFieldsValues[key] = initialValue || '';
             modelProps.registeredFieldValidationErrors[key] = [];
             modelProps.registeredFieldsState[key] = { dirty: false };
         }
         return {
             clear: () => {
-                modelProps.registeredFieldsValues[key] = initialValue || "";
+                modelProps.registeredFieldsValues[key] = initialValue || '';
                 modelProps.registeredFieldValidationErrors[key] = [];
             },
             handler,
@@ -1513,24 +1516,22 @@ function setup(modelProps, setupFn, opts) {
             key,
             validate,
             validationErrors: modelProps.registeredFieldValidationErrors[key],
-            value: modelProps.registeredFieldsValues[key],
+            value: modelProps.registeredFieldsValues[key]
         };
     }
     /**
-     * Checks to see if any of the registerd routes are matched and then updates the app state using
+     * Checks to see if any of the registered routes are matched and then updates the app state using
      * the provided transformation function.
-     * @param  {Readonly<T>} props
-     * @returns T
      */
-    function applyRouteFunction(props) {
-        // console.log("routes:", routes)
+    function applyRouteFunction() {
+        // Console.log("routes:", routes)
         for (const key in routes) {
-            if (routes.hasOwnProperty(key)) {
+            if (Object.prototype.hasOwnProperty.call(routes, key)) {
                 const entry = routes[key];
-                // console.log("testing", entry)
+                // Console.log("testing", entry)
                 const res = entry.spec.test(window.location.pathname);
                 if (res) {
-                    // console.log("found route", res)
+                    // Console.log("found route", res)
                     entry.calculator({ key, path: entry.spec.path, data: res }, modelPresenter);
                 }
             }
@@ -1548,30 +1549,30 @@ function setup(modelProps, setupFn, opts) {
         registerAction,
         registerField,
         registerRouteAction,
-        registerView: function (renderFn) {
-            const fretsContext = this;
+        registerView(renderFn) {
             stateRenderer = () => {
-                console.log("calling renderView fn", fretsContext);
-                return renderFn(fretsContext);
+                console.log('calling renderView fn', this);
+                return renderFn(this);
             };
-            state = function (newProps) {
+            state = (newProps) => {
                 console.log('updating state inside frets', newProps);
-                fretsContext.modelProps = Object.assign(Object.assign({}, modelProps), newProps);
+                this.modelProps = Object.assign(Object.assign({}, modelProps), newProps);
                 projector.scheduleRender();
             };
-        },
+        }
     };
-    window.onpopstate = function (evt) {
-        applyRouteFunction(modelProps);
+    window.onpopstate = () => {
+        applyRouteFunction();
     };
     setupFn(F);
     return {
         fretsApp: F,
         mountTo: (id) => {
+            // eslint-disable-next-line unicorn/prefer-query-selector
             projector.replace(document.getElementById(id), stateRenderer);
         },
         present: modelPresenter,
-        stateRenderer,
+        stateRenderer
     };
 }
 
@@ -1584,14 +1585,6 @@ class PropsWithFields {
     }
 }
 
-class ActionsWithFields {
-    constructor() {
-        this.registeredFieldActions = {};
-    }
-}
-
+exports.PropsWithFields = PropsWithFields;
 exports.maquette = index;
 exports.setup = setup;
-exports.PropsWithFields = PropsWithFields;
-exports.ActionsWithFields = ActionsWithFields;
-//# sourceMappingURL=frets.cjs.js.map

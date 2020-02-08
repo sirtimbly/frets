@@ -1,6 +1,6 @@
-import { Projector, VNode } from "maquette";
-import Path from "path-parser";
-import { PropsWithFields } from "./PropsFieldRegistry";
+import { Projector, VNode } from 'maquette';
+import { Path } from 'path-parser';
+import { PropsWithFields } from './props-field-registry';
 export interface IValidationObject {
     notEmpty?: {
         value: boolean;
