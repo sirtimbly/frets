@@ -21,7 +21,7 @@
     "build:tests": "trash test && node config/exports/build-tests.js",
     "lint": "xo",
     "lint:fix": "xo --fix",
-    "unit": "nyc ava --timeout 5000",
+    "unit": "nyc ava",
     "check-coverage": "nyc check-coverage --lines 10 --functions 10 --branches 0",
     "test": "npm run lint && npm run unit && npm run check-coverage",
     "test:watch": "ava --watch",

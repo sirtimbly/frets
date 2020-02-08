@@ -3,7 +3,7 @@ import {
 	IFunFrets,
 	PropsWithFields,
 	setup
-} from '../src/index';
+} from './index';
 import {h, VNode} from 'maquette';
 import { createTestProjector } from 'maquette-query';
 
