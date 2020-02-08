@@ -11,7 +11,7 @@
   "license": "MIT",
   "scripts": {
     "info": "npm-scripts-info",
-    "build": "trash build && npm run build:main && npm run build:module && npm run build:browser && npm run build:browser-cjs && npm run build:browser-min",
+    "build": "trash build && npm run build:main",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p config/exports/tsconfig.module.json",
     "build:browser": "rollup -c config/exports/rollup.config.js -f es -o build/browser/frets.js",
