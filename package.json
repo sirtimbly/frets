@@ -19,11 +19,12 @@
     "build:browser-cjs": "rollup -c config/exports/rollup.config.js -f cjs -o build/browser/frets.cjs.js",
     "build:resolve-sourcemaps": "sorcery -i build/browser/frets.js && sorcery -i build/browser/frets.cjs.js",
     "build:tests": "trash test && node config/exports/build-tests.js",
-    "lint": "tslint --project .",
-    "unit": "npm run build && npm run build:tests && nyc ava --timout 500",
+    "lint": "xo",
+    "lint:fix": "xo --fix",
+    "unit": "nyc ava --timeout 5000",
     "check-coverage": "nyc check-coverage --lines 10 --functions 10 --branches 0",
     "test": "npm run lint && npm run unit && npm run check-coverage",
-    "watch": "npm run build && npm run build:tests -- --no-browser && concurrently -r --kill-others 'npm run --silent build:main -- -w' 'npm run --silent build:tests -- -w --no-browser' 'sleepms 2000 && ava --watch'",
+    "test:watch": "ava --watch",
     "cov": "npm run unit && npm run html-coverage && opn coverage/index.html",
     "html-coverage": "nyc report --reporter=html",
     "send-coverage": "nyc report --reporter=lcov > coverage.lcov && codecov",
@@ -61,8 +62,14 @@
     "@semantic-release/commit-analyzer": "^6.1.0",
     "@semantic-release/npm": "^5.1.13",
     "@semantic-release/release-notes-generator": "^7.1.4",
+    "@types/eslint": "^6.1.8",
     "@types/node": "^8.10.21",
-    "ava": "^0.25.0",
+    "@typescript-eslint/parser": "2.19.0",
+    "@typescript-eslint/eslint-plugin": "^2.19.0",
+    "eslint": "6.8.0",
+    "eslint-config-xo": "^0.27.2",
+    "eslint-config-xo-typescript": "^0.26.0",
+    "ava": "^3.2.0",
     "browser-env": "^3.2.5",
     "codecov": "^3.1.0",
     "concurrently": "^3.6.0",
@@ -74,7 +81,8 @@
     "npm-scripts-info": "^0.3.6",
     "nyc": "^14.1.1",
     "opn-cli": "^3.1.0",
-    "rollup": "^0.67.4",
+    "prettier": "1.19.1",
+    "rollup": "^1.31.0",
     "rollup-plugin-alias": "^1.2.0",
     "rollup-plugin-commonjs": "^8.0.2",
     "rollup-plugin-node-resolve": "^3.0.0",
@@ -84,11 +92,13 @@
     "sorcery": "^0.10.0",
     "standard-version": "^4.4.0",
     "trash-cli": "^1.4.0",
+    "ts-node": "8.6.2",
     "tslint": "^5.12.1",
     "tslint-config-standard": "^8.0.1",
     "typedoc": "^0.14.2",
     "typescript": "^3.7.5",
-    "vuepress": "^0.14.8"
+    "vuepress": "^0.14.8",
+    "xo": "^0.25.3"
   },
   "keywords": [
     "framework",
@@ -106,18 +116,20 @@
   ],
   "nyc": {
     "exclude": [
-      "**/*.spec.js",
+      "**/*.spec.*",
       "build/browser/**",
       "config/**"
     ]
   },
   "ava": {
+    "extensions": [
+      "ts"
+    ],
     "source": [
-      "test/browser/**/*.js",
-      "build/browser/**/*.js",
-      "!build/**/*.spec.js"
+      "src/**/*.spec.ts"
     ],
     "require": [
+      "ts-node/register",
       "./config/setup-browser-env.js"
     ]
   },
@@ -138,6 +150,31 @@
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
       "@semantic-release/npm"
+    ]
+  },
+  "xo": {
+    "globals": [
+      "$",
+      "window",
+      "document",
+      "InputEvent"
+    ],
+    "prettier": true,
+    "rules": {
+      "import/no-unresolved": 0
+    },
+    "extends": "xo-typescript",
+    "extensions": [
+      "ts"
+    ],
+    "ignore": [
+      "test",
+      "build",
+      "benchmarks",
+      "config",
+      "docs",
+      "pages",
+      "src/*.spec.ts"
     ]
   }
 }
