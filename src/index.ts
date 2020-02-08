@@ -10,7 +10,7 @@ export {
 	IMountable,
 	IModelPresenter,
 	IRegisteredField
-} from './frets';
+} from './Frets';
 export {PropsWithFields} from './props-field-registry';
 export {maquette};
 export {VNode, VNodeChild, VNodeProperties, VNodeChildren};

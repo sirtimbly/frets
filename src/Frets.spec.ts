@@ -304,3 +304,83 @@ test('registers a route and changes when navigating', t => {
 //   t.falsy(msgs.exists());
 //   t.not(F.modelProps.messages[0], "try");
 // });
+
+class FormProps extends PropsWithFields {
+	status: 'submitted' | 'draft' = 'draft';
+	actionInProgress?: 'save' | 'submit' | 'load' = 'load';
+	id?: string;
+}
+
+test("state graph resolves", (t) => {
+	const main = setup<FormProps>(new FormProps(), f => {
+		f.registerAcceptor((proposal, updateState) => {
+			console.log('accepting', proposal)
+			updateState(proposal)
+		})
+		f.registerStateGraph({
+			name: 'opening',
+			// edges are specified in reverse specificity order because edges are evaluated
+			// in order and only the first node in an array of edges is returned
+			edges: [
+				{
+					name: 'submitted',
+					guard: (props) => props.status === 'submitted',
+					renderer: () => h("span", ["submitted the form"])
+				},
+				{
+					name: 'saved',
+					guard: (props) => Boolean(props.id),
+					renderer: () => h("span", ["saved form"]),
+					edges: [
+						{
+							name: 'submitting',
+							guard: (props) => props.actionInProgress === 'submit',
+							renderer: () => h("span", ["submitting"])
+						}
+					]
+				},
+				{
+					name: 'empty',
+					guard: (props) => !props.id && props.actionInProgress !== 'load',
+					renderer: () => h("span", ["empty form screen"]),
+					edges: [
+						{
+							name: 'saving',
+							guard: (props) => (props.actionInProgress === 'save'),
+							renderer: () => h("span", ["saving"])
+						}
+					]
+				},
+			],
+			renderer: () => h("span", ["opening screen"])
+		})
+		t.truthy(f.currentStateNode)
+		const save = f.registerAction('save', (e, present) => {
+			console.log('finished loading action')
+			present({ actionInProgress: 'save' })
+		})
+
+		f.registerView((app) => h('div', [
+			h('button#save', { onclick: save }, ['save']),
+			app.currentStateNode.renderer(app)
+		]))
+
+
+	})
+
+	t.is(main.fretsApp.modelProps.actionInProgress, 'load')
+	const proj = createTestProjector(main.stateRenderer);
+	t.is(proj.query('span').textContent, 'opening screen');
+	// t.is(main.fretsApp.resolveState().name, 'opening')
+	main.present({ actionInProgress: undefined })
+	t.is(proj.query('span').textContent, 'empty form screen');
+	proj.query('button#save').simulate.click()
+	t.is(proj.query('span').textContent, 'saving');
+	main.present({ actionInProgress: undefined, id: '12321' })
+	t.is(proj.query('span').textContent, 'saved form');
+	main.present({ actionInProgress: 'submit' })
+	t.is(proj.query('span').textContent, 'submitting');
+	main.present({ actionInProgress: undefined, status: 'submitted' })
+	t.is(proj.query('span').textContent, 'submitted the form');
+
+})

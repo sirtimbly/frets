@@ -24,7 +24,7 @@
     "unit": "nyc ava",
     "check-coverage": "nyc check-coverage --lines 10 --functions 10 --branches 0",
     "test": "npm run lint && npm run unit && npm run check-coverage",
-    "test:watch": "ava --watch",
+    "test:watch": "ava --watch --verbose",
     "cov": "npm run unit && npm run html-coverage && opn coverage/index.html",
     "html-coverage": "nyc report --reporter=html",
     "send-coverage": "nyc report --reporter=lcov > coverage.lcov && codecov",
@@ -159,7 +159,9 @@
     ],
     "prettier": true,
     "rules": {
-      "import/no-unresolved": 0
+      "import/no-unresolved": 0,
+      "xo/filename-case": 0,
+      "unicorn/filename-case": 0
     },
     "extends": "xo-typescript",
     "extensions": [

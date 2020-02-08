@@ -68,7 +68,7 @@ export type IModelPresenter<T extends PropsWithFields> = (
 ) => void;
 export type IRegisterFieldFn = <U>(
 	key: string,
-	defaultValue: U,
+	defaultValue?: U,
 	validation?: IValidationObject
 ) => IRegisteredField<U>;
 export interface IFunFrets<T extends PropsWithFields> {
@@ -84,6 +84,8 @@ export interface IFunFrets<T extends PropsWithFields> {
 		actionFn: RouteActionFn<T>
 	) => void;
 	registerAcceptor: (presenterFn: IModelPresenter<T>) => void;
+	registerStateGraph: (entryState: IStateNode<T>) => void;
+	currentStateNode: IStateNode<T>;
 	getRouteLink: (key: string, data?: any) => string | false;
 	navToRoute: (key: string, data?: any) => void;
 	navToPath: (key: string, data?: any) => void;
@@ -97,6 +99,13 @@ export interface IMountable<T extends PropsWithFields> {
 }
 export interface ISetupOptions {
 	projector: Projector;
+}
+
+export interface IStateNode<T extends PropsWithFields> {
+	name: string;
+	guard?: (modelProps: T) => boolean;
+	edges?: Array<IStateNode<T>>;
+	renderer: (app: IFunFrets<T>) => VNode;
 }
 
 export function setup<T extends PropsWithFields>(
@@ -121,6 +130,9 @@ export function setup<T extends PropsWithFields>(
 		[key: string]: IActionEventHandler;
 	} = {};
 
+	const stateGraph: {entry?: IStateNode<T>} = {};
+
+	let currentStateNode: IStateNode<T> | undefined;
 	/**
 	 * Returns a path when given the key of a route that was previously registered.
 	 * @param  {string} key
@@ -169,6 +181,7 @@ export function setup<T extends PropsWithFields>(
 		for (const key in modelPresenters) {
 			if (Object.prototype.hasOwnProperty.call(modelPresenters, key)) {
 				const accept = modelPresenters[key];
+				// Console.log('--> sending proposal', proposal);
 				accept(proposal);
 			}
 		}
@@ -225,73 +238,33 @@ export function setup<T extends PropsWithFields>(
 	//   };
 	// }
 
-	function registerField<S>(
-		key: string,
-		initialValue: S,
-		validation?: IValidationObject
-	): IRegisteredField<S> {
-		function handler(evt: InputEvent | Event, skipValidation?: boolean): void {
-			let val;
-			if (typeof evt === typeof InputEvent) {
-				val = (evt as InputEvent).data;
-			} else {
-				val = (evt.target as HTMLInputElement).value;
-			}
-
-			modelProps.registeredFieldsValues[key] = val;
-			if (val.length > 0) {
-				modelProps.registeredFieldsState[key].dirty = true; // Latching switch
-			}
-
-			if (!skipValidation) {
-				validate();
-			}
+	function resolveState(props: T): IStateNode<T> {
+		if (!stateGraph.entry) {
+			throw new Error('Cannot resolve current state.');
 		}
 
-		function validate(): void {
-			if (validation) {
-				const val = modelProps.registeredFieldsValues[key];
-				const errors: string[] = [];
-				if (validation.notEmpty && (!val || val === '')) {
-					errors.push(validation.notEmpty.message);
+		function validEdge(edges: Array<IStateNode<T>>): IStateNode<T> | undefined {
+			// Console.log('checking all guards', props);
+			return edges.find(x => {
+				// Console.log('guard', x.guard(props));
+				return x.guard(props);
+			});
+		}
+
+		const nestedEdges = (s: IStateNode<T>): IStateNode<T> => {
+			// Console.log('eval node', s.name);
+			if (s.edges && s.edges.length !== 0) {
+				const v = validEdge(s.edges);
+				// Console.log('found valid edge', v);
+				if (v) {
+					return nestedEdges(v);
 				}
-
-				if (validation.minLength && val.length < validation.minLength.value) {
-					errors.push(validation.minLength.message);
-				}
-
-				if (validation.maxLength && val.length > validation.maxLength.value) {
-					errors.push(validation.maxLength.message);
-				}
-
-				modelProps.registeredFieldValidationErrors[key] = errors;
 			}
-		}
 
-		if (modelProps.registeredFieldsValues[key] === undefined) {
-			modelProps.registeredFieldsValues[key] = initialValue || '';
-			modelProps.registeredFieldValidationErrors[key] = [];
-			modelProps.registeredFieldsState[key] = {dirty: false};
-		}
-
-		if (registeredFieldActions[key] === undefined) {
-			registeredFieldActions[key] = handler;
-		}
-
-		return {
-			clear: () => {
-				modelProps.registeredFieldsValues[key] = initialValue || '';
-				modelProps.registeredFieldValidationErrors[key] = [];
-			},
-			handler,
-			isDirty: () => modelProps.registeredFieldsState[key].dirty,
-			isValid: () =>
-				!(modelProps.registeredFieldValidationErrors[key].length > 0),
-			key,
-			validate,
-			validationErrors: modelProps.registeredFieldValidationErrors[key],
-			value: modelProps.registeredFieldsValues[key]
+			return s;
 		};
+
+		return nestedEdges(stateGraph.entry);
 	}
 
 	/**
@@ -327,20 +300,106 @@ export function setup<T extends PropsWithFields>(
 		projector,
 		registerAcceptor,
 		registerAction,
-		registerField,
+		registerField<S>(
+			key: string,
+			initialValue?: S,
+			validation?: IValidationObject
+		): IRegisteredField<S> {
+			const handler = (
+				evt: InputEvent | Event,
+				skipValidation?: boolean
+			): void => {
+				let val;
+				if (typeof evt === typeof InputEvent) {
+					val = (evt as InputEvent).data;
+				} else {
+					val = (evt.target as HTMLInputElement).value;
+				}
+
+				this.modelProps.registeredFieldsValues[key] = val;
+
+				if (val.length > 0) {
+					this.modelProps.registeredFieldsState[key].dirty = true; // Latching switch
+				}
+
+				if (!skipValidation) {
+					validate();
+				}
+
+				// Console.log('field event handler finished', this.modelProps);
+			};
+
+			const validate = (): void => {
+				const v = this.modelProps.registeredFieldsState[key].validation;
+				if (v) {
+					// Console.log('validating', v);
+					const val = this.modelProps.registeredFieldsValues[key];
+					const errors: string[] = [];
+					if (v.notEmpty && (!val || val === '')) {
+						errors.push(v.notEmpty.message);
+					}
+
+					if (v.minLength && val.length < v.minLength.value) {
+						errors.push(v.minLength.message);
+					}
+
+					if (v.maxLength && val.length > v.maxLength.value) {
+						errors.push(v.maxLength.message);
+					}
+
+					this.modelProps.registeredFieldValidationErrors[key] = errors;
+				}
+			};
+
+			if (this.modelProps.registeredFieldsValues[key] === undefined) {
+				this.modelProps.registeredFieldsValues[key] = initialValue || '';
+				this.modelProps.registeredFieldValidationErrors[key] = [];
+				this.modelProps.registeredFieldsState[key] = {dirty: false};
+				if (validation) {
+					this.modelProps.registeredFieldsState[key].validation = validation;
+				}
+			}
+
+			if (registeredFieldActions[key] === undefined) {
+				registeredFieldActions[key] = handler;
+			}
+
+			return {
+				clear: () => {
+					this.modelProps.registeredFieldsValues[key] = initialValue || '';
+					this.modelProps.registeredFieldValidationErrors[key] = [];
+				},
+				handler,
+				isDirty: () => this.modelProps.registeredFieldsState[key].dirty,
+				isValid: () =>
+					!(this.modelProps.registeredFieldValidationErrors[key].length > 0),
+				key,
+				validate,
+				validationErrors: this.modelProps.registeredFieldValidationErrors[key],
+				value: this.modelProps.registeredFieldsValues[key]
+			};
+		},
 		registerRouteAction,
+		registerStateGraph(entryState: IStateNode<T>): void {
+			stateGraph.entry = entryState;
+
+			this.currentStateNode = resolveState(modelProps);
+		},
+		currentStateNode,
 		registerView(renderFn: (fretsApp: IFunFrets<T>) => VNode) {
 			stateRenderer = () => {
-				console.log('calling renderView fn', this);
 				return renderFn(this);
 			};
 
 			state = (newProps: Partial<T>): void => {
-				console.log('updating state inside frets', newProps);
 				this.modelProps = {
-					...modelProps,
+					...this.modelProps,
 					...newProps
 				};
+				if (stateGraph?.entry) {
+					this.currentStateNode = resolveState(this.modelProps);
+				}
+
 				projector.scheduleRender();
 			};
 		}

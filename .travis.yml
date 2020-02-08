@@ -6,7 +6,6 @@ script:
   - npm test
 after_success:
   - npm run send-coverage
-  # - npm run docs:publish
 
 deploy:
   provider: script
@@ -17,10 +16,3 @@ deploy:
   on:
     branch: master
 
-deploy:
-  provider: script
-  skip_cleanup: true
-  script:
-    - npx semantic-release
-  on:
-    branch: beta
