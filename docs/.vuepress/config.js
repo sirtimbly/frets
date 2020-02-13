@@ -8,7 +8,7 @@ module.exports = {
         link: '/'
       },
       {
-        text: 'Guide',
+        text: 'Start using Frets',
         link: '/guide/'
       },
       {
@@ -16,13 +16,16 @@ module.exports = {
         link: 'https://github.com/sirtimbly/frets/'
       },
       {
-        text: 'API Docs',
+        text: 'API Docss',
         link: 'https://sirtimbly.github.io/frets/api/'
       },
     ],
     sidebar: [
       '/',
-      '/guide/'
+      '/guide/',
+      '/guide/layers',
+      '/guide/components',
+      '/guide/philosophy'      
     ]
   }
 }
