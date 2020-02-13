@@ -181,7 +181,6 @@ export function setup<T extends PropsWithFields>(
 		for (const key in modelPresenters) {
 			if (Object.prototype.hasOwnProperty.call(modelPresenters, key)) {
 				const accept = modelPresenters[key];
-				// Console.log('--> sending proposal', proposal);
 				accept(proposal);
 			}
 		}
@@ -305,7 +304,6 @@ export function setup<T extends PropsWithFields>(
 			const validate = (): void => {
 				const v = this.modelProps.registeredFieldsState[key].validation;
 				if (v) {
-					// Console.log('validating', v);
 					const val = this.modelProps.registeredFieldsValues[key];
 					const errors: string[] = [];
 					if (v.notEmpty && (!val || val === '')) {
