@@ -48,7 +48,7 @@ export declare type IPresent<T extends PropsWithFields> = (proposal: Partial<T>)
 export declare type IActionEventHandler = (event: Event) => void;
 export declare type IActionFn<T extends PropsWithFields> = (event: Event, present: IPresent<T>) => void;
 export declare type IModelPresenter<T extends PropsWithFields> = (proposal: Partial<T>, state: (props: Partial<T>) => void) => void;
-export declare type IRegisterFieldFn = <U>(key: string, defaultValue: U, validation?: IValidationObject) => IRegisteredField<U>;
+export declare type IRegisterFieldFn = <U>(key: string, defaultValue?: U, validation?: IValidationObject) => IRegisteredField<U>;
 export interface IFunFrets<T extends PropsWithFields> {
     modelProps: T;
     present: (proposal: Partial<T>) => void;
@@ -58,6 +58,8 @@ export interface IFunFrets<T extends PropsWithFields> {
     registerAction: (key: string, actionFn: IActionFn<T>) => IActionEventHandler;
     registerRouteAction: (key: string, path: string, actionFn: RouteActionFn<T>) => void;
     registerAcceptor: (presenterFn: IModelPresenter<T>) => void;
+    registerStateGraph: (entryState: IStateNode<T>) => void;
+    currentStateNode: IStateNode<T>;
     getRouteLink: (key: string, data?: any) => string | false;
     navToRoute: (key: string, data?: any) => void;
     navToPath: (key: string, data?: any) => void;
@@ -70,6 +72,12 @@ export interface IMountable<T extends PropsWithFields> {
 }
 export interface ISetupOptions {
     projector: Projector;
+}
+export interface IStateNode<T extends PropsWithFields> {
+    name: string;
+    guard?: (modelProps: T) => boolean;
+    edges?: Array<IStateNode<T>>;
+    renderer: (app: IFunFrets<T>) => VNode;
 }
 export declare function setup<T extends PropsWithFields>(modelProps: T, setupFn: (fretsApp: IFunFrets<T>) => void, opts?: ISetupOptions): IMountable<T>;
 export {};

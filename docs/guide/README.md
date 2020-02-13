@@ -116,75 +116,56 @@ You will need a tsconfig.json file in the root of your project.
 
 ## App.ts
 
-Setup some important things need to be set up in the main typescript file.
+Some important things need to be set up in the main typescript file.
 
-It needs a class defined for your data model.
+First, we need a class defined for your data model. A plain old object and interface type will work too, but you will have to include some boilerplate properties for the internal registries.
 
 ```ts
 import {PropsWithFields, ActionsWithFields, FRETS} from 'frets';
 
 export class RealWorldProps extends PropsWithFields {
 	public username?: string;
-
-	constructor(props?: Partial<RealWorldProps>) {
-		super();
-		if (props) {
-			Object.assign(this, props);
-		}
-	}
 }
 ```
 
-Then you need a class that defines Actions which can be taken in your app.
+We can now "setup" an instance of a FRETS app with the model props class as the specified generic types in the first argument.
 
 ```ts
-export class RealWorldActions extends ActionsWithFields {
-	public login: (e: Event) => void;
+export type App = FunFRETS<RealWorldProps>;
 
-}
+const app: App = setup(new RealWorldProps(), (f) => {
+  // specify all your app stuff inside here
+});
 ```
-
-We can now "new up" an instance of a FRETS app with those two classes as the specified generic types. We don't need to export the Frets app object but we can export a type which will be a useful shorthand in other functions that accept the app as an argument later on.
-
-```ts
-export type App = FRETS<RealWorldProps, RealWorldActions>;
-
-const F: App = new FRETS<RealWorldProps, RealWorldActions>(
-	new RealWorldProps(),
-	new RealWorldActions()
-);
-```
-
-You will also want to specify and export a Type for the action event handler functions which you need to register next.
+You can add actions to your app like so:
 
 ```ts
-export type ActionFn = (e: Event, data: Readonly<RealWorldProps>) => RealWorldProps;
-```
-
-This makes it slightly less verbose to create many of these functions which all share the same signature.
-
-```ts
-const loginAction: ActionFn = (e, data) => {
+const loginAction = f.registerAction('setUser', (e, present) => {
 	e.preventDefault();
-	return {
-		...data,
-		username: F.getField<string>('fieldName').value
+	present({
+		username: e.currentTarget.value
 	};
 };
 
-F.actions.login = F.registerAction(loginAction);
 ```
 
-I'll explain about `getField` in a little bit. This is obviously a really simple example of an action. At it's core it makes a change to the passed in data model and returns it.
+This simple action takes an event from an input element and passes it into the `present` function because the user intends to update the data model in this way.
 
-We register these functions and do an assignment at the same time: so that in your view rendering functions it's possible to add a typesafe handler.
+We register these functions with app and we will be given a valid event handler function for any onX DOM event.
+
+We will also want to add a simple model acceptor for handling data updates.5s
 
 ```ts
-  // spoiler alert!
-	$.button.btn.btnBlue.h({onclick: app.actions.login}, ['Login'])
+f.registerAccceptor((proposal, state) => {
+  // include any business logic here
+  state(proposal)
+})
 ```
 
+
 ## Tailwind CSS
+
+I really recommend building your user interfaces with a functional CSS framework like [Tailwind](https://tailwindcss.com/). Frets is designed around the idea that writing hyperscript functions can be nicer than writing JSX or HTML templates if we provide a better, more fluent, API.
 
 In order to use tailwind we need to create a new `postcss.config.js  ` file in the root of our project.
 
@@ -232,13 +213,24 @@ We're not quite ready to run yet. We still need to write our view rendering meth
 
 ## Generating the atomic CSS app-styles class
 
-In order to make dom renering functions more developer-friendly, we can turn that css file into a typescript file full of helpful methods by using `frets-styles-generator`.
+In order to make DOM rendering functions more developer-friendly, we can turn that css file into a typescript file full of helpful methods by using `frets-styles-generator`.
 
 ```sh
 ./node_modules/.bin/frets-styles-generator src/styles/
 ```
 
-This will create a new typescript file next to any CSS files in the path you specify. For instance app.css will get it's own companion typescript class at `src/styles/app-styles.ts`. You will be importing the `$` and `$$` members into your view rendering functions becaus those classes have a special "getter" method which creates a chainable api for generating dom nodes with long "utility-first" css class names in javascript without having to write out long un-refactorable strings.
+This will create a new typescript file next to any existing CSS files in the path you specify. For instance if you have tailwind create an `app.css` file, it will get it's own companion typescript class at `src/styles/app-styles.ts`. You will be importing the `$` and `$$` members into your view rendering functions because those generated classes have a special "getter" method which creates a chainable api for generating dom nodes with long "utility-first" css class names in javascript without having to write out long un-refactorable strings. So instead of
+
+```ts
+h("div.h-12.w-12.rounded-lg.shadow-inner.bg-red-500", [children])
+```
+
+We can write this with the help of autocomplete/intellisense in our IDE. Never wondering if the class we typed in actually exists, and getting type-checker errors if a class name ever changes or disappears from the underlying CSS file.
+
+```ts
+$.div.h-12.w-12.rounded-lg.shadow-inner.bg-red-500.h([children])
+```
+
 
 ## View render methods
 
@@ -283,31 +275,34 @@ export const renderRoot = (app: App): VNode => {
 Since our functions are stateless we have to access persistent state from the `app.modelProps` on the main app or from a registry of ad-hoc data fields that are keyed by strings. You see this above like this:
 
 ```ts
-const usernameField = app.registerField<string>('fieldName');
+const usernameField = f.registerField<string>('fieldName');
 ```
 
 You can also pass in a default value to start with. If it's been called once it won't overwrite. And if you pass in a default value then you don't need to specify the generic type.
 
 ```ts
-const usernameField = app.registerField('fieldName', 'bob the builder');
+const usernameField = f.registerField('fieldName', 'bob the builder');
 ```
 
 Now `usernameField` is an object with 'value' and 'handler' members.  The value of course is for displaying the current value stored in state, and the handler is for changing the value when a browser event causes an update. This handler assumes it was attached to a form field and receives a change or blur event.
 
+Since we give the field a name, we can call the `registerField` function with that same name anywhere in the application rendering methods or inside the setup method and get a handler and other useful data like validation errors, and wether or not the field is "dirty" meaning has ever been changed from the default.
 
 ## Register the view and Mount to DOM
 
 We just need to wire up this final method into our main frets app by importing root.ts inside of app.ts and then we have a fully functional frets app.
 
 ```ts
-F.registerView(renderRoot);
+setup({}, (f) => {
+  // ... app setup happening above
+  f.registerView(renderRoot);
 
-F.mountTo('app');
+}).mountTo('app');
 ```
 
 The argument passed to the mountTo method is the id of an element in the html which will be merged with the output of the render method. This allows for easy usage of skeleton placeholders and server-rendered content that can be replaced after the page has been "hydrated" and the JS is all loaded and parsed. Frets apps should pride themselves on being small, and light-weight so hopefully the user won't have enormous JS bundles that take forever to download and parse.
 
-Maquette handles all of the virtual-dom diffing and updating in an efficient and simple manner. After any event handler is fired from within the dom tree that maquette is responsible for, the specified app render function is called again with whatever values are currently in the app state after being updated inside the actions (handlers). If an async call comes back it needs to call `F.render(newProps)` in order to manually trigger a new DOM rendering cycle.
+Maquette handles all of the virtual-dom diffing and updating in an efficient and simple manner. After any event handler is fired from within the dom tree that maquette is responsible for, the specified app render function is called again with whatever values are currently in the app state after being updated inside the actions (handlers). If an async call comes back later, it needs to call `present()` in an event or `state()` in a model accpetor to manually trigger a new DOM rendering cycle.
 
 Now run the parcel dev server either from a script in package.json or with the command
 
