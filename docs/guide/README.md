@@ -116,9 +116,9 @@ You will need a tsconfig.json file in the root of your project.
 
 ## App.ts
 
-Setup some important things need to be set up in the main typescript file.
+Some important things need to be set up in the main typescript file.
 
-It needs a class defined for your data model.
+First, we need a class defined for your data model. A plain old object and interface type will work too, but you will have to include some boilerplate properties for the internal registries.
 
 ```ts
 import {PropsWithFields, ActionsWithFields, FRETS} from 'frets';
@@ -128,13 +128,12 @@ export class RealWorldProps extends PropsWithFields {
 }
 ```
 
-
 We can now "setup" an instance of a FRETS app with the model props class as the specified generic types in the first argument.
 
 ```ts
 export type App = FunFRETS<RealWorldProps>;
 
-const app: App = setup({}, (f) => {
+const app: App = setup(new RealWorldProps(), (f) => {
   // specify all your app stuff inside here
 });
 ```
@@ -154,8 +153,19 @@ This simple action takes an event from an input element and passes it into the `
 
 We register these functions with app and we will be given a valid event handler function for any onX DOM event.
 
+We will also want to add a simple model acceptor for handling data updates.5s
+
+```ts
+f.registerAccceptor((proposal, state) => {
+  // include any business logic here
+  state(proposal)
+})
+```
+
 
 ## Tailwind CSS
+
+I really recommend building your user interfaces with a functional CSS framework like [Tailwind](https://tailwindcss.com/). Frets is designed around the idea that writing hyperscript functions can be nicer than writing JSX or HTML templates if we provide a better, more fluent, API.
 
 In order to use tailwind we need to create a new `postcss.config.js  ` file in the root of our project.
 
@@ -203,13 +213,24 @@ We're not quite ready to run yet. We still need to write our view rendering meth
 
 ## Generating the atomic CSS app-styles class
 
-In order to make dom renering functions more developer-friendly, we can turn that css file into a typescript file full of helpful methods by using `frets-styles-generator`.
+In order to make DOM rendering functions more developer-friendly, we can turn that css file into a typescript file full of helpful methods by using `frets-styles-generator`.
 
 ```sh
 ./node_modules/.bin/frets-styles-generator src/styles/
 ```
 
-This will create a new typescript file next to any CSS files in the path you specify. For instance app.css will get it's own companion typescript class at `src/styles/app-styles.ts`. You will be importing the `$` and `$$` members into your view rendering functions becaus those classes have a special "getter" method which creates a chainable api for generating dom nodes with long "utility-first" css class names in javascript without having to write out long un-refactorable strings.
+This will create a new typescript file next to any existing CSS files in the path you specify. For instance if you have tailwind create an `app.css` file, it will get it's own companion typescript class at `src/styles/app-styles.ts`. You will be importing the `$` and `$$` members into your view rendering functions because those generated classes have a special "getter" method which creates a chainable api for generating dom nodes with long "utility-first" css class names in javascript without having to write out long un-refactorable strings. So instead of
+
+```ts
+h("div.h-12.w-12.rounded-lg.shadow-inner.bg-red-500", [children])
+```
+
+We can write this with the help of autocomplete/intellisense in our IDE. Never wondering if the class we typed in actually exists, and getting type-checker errors if a class name ever changes or disappears from the underlying CSS file.
+
+```ts
+$.div.h-12.w-12.rounded-lg.shadow-inner.bg-red-500.h([children])
+```
+
 
 ## View render methods
 

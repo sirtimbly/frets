@@ -1,3 +1,4 @@
+import { IValidationObject } from './Frets';
 export declare class PropsWithFields {
     registeredFieldsValues: {
         [key: string]: any;
@@ -5,6 +6,7 @@ export declare class PropsWithFields {
     registeredFieldsState: {
         [key: string]: {
             dirty: boolean;
+            validation: IValidationObject;
         };
     };
     registeredFieldValidationErrors: {
