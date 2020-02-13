@@ -223,45 +223,20 @@ export function setup<T extends PropsWithFields>(
 		}
 	}
 
-	// Function registerView(renderFn: (fretsApp: IFunFrets<T>) => VNode) {
-	//   stateRenderer = () => {
-	//     console.log("calling renderView fn", F)
-	//     return renderFn(F);
-	//   }
-	//   state = (newProps: Partial<T>) => {
-	//     console.log('updating state inside frets', newProps)
-	//     modelProps = {
-	//       ...modelProps,
-	//       ...newProps
-	//     }
-	//     projector.scheduleRender();
-	//   };
-	// }
-
 	function resolveState(props: T): IStateNode<T> {
 		if (!stateGraph.entry) {
 			throw new Error('Cannot resolve current state.');
 		}
 
 		function validEdge(edges: Array<IStateNode<T>>): IStateNode<T> | undefined {
-			// Console.log('checking all guards', props);
+			if (!edges) return undefined;
 			return edges.find(x => {
-				// Console.log('guard', x.guard(props));
 				return x.guard(props);
 			});
 		}
 
-		const nestedEdges = (s: IStateNode<T>): IStateNode<T> => {
-			// Console.log('eval node', s.name);
-			if (s.edges && s.edges.length !== 0) {
-				const v = validEdge(s.edges);
-				// Console.log('found valid edge', v);
-				if (v) {
-					return nestedEdges(v);
-				}
-			}
-
-			return s;
+		const nestedEdges = (s: IStateNode<T> | undefined): IStateNode<T> => {
+			return (s && nestedEdges(validEdge(s.edges))) || s;
 		};
 
 		return nestedEdges(stateGraph.entry);
@@ -325,8 +300,6 @@ export function setup<T extends PropsWithFields>(
 				if (!skipValidation) {
 					validate();
 				}
-
-				// Console.log('field event handler finished', this.modelProps);
 			};
 
 			const validate = (): void => {
