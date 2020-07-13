@@ -90,7 +90,7 @@
     "semantic-release": "^17.0.2",
     "sleep-ms": "^2.0.1",
     "sorcery": "^0.10.0",
-    "standard-version": "^7.1.0",
+    "standard-version": "^8.0.1",
     "trash-cli": "^3.0.0",
     "ts-node": "8.6.2",
     "typedoc": "^0.16.9",
