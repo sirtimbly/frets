@@ -18,9 +18,10 @@ export interface IValidationObject {
 		message: string;
 	};
 }
+type handlerFn = (evt: Event, skipValidation?: boolean) => void;
 
 export interface IRegisteredField<T> {
-	handler: (evt: Event, skipValidation?: boolean) => void | boolean;
+	handler: handlerFn;
 	validate: () => void;
 	validationErrors: string[];
 	isValid: () => boolean;
@@ -111,9 +112,9 @@ export interface IStateNode<T extends PropsWithFields> {
 export function setup<T extends PropsWithFields>(
 	modelProps: T,
 	setupFn: (fretsApp: IFunFrets<T>) => void,
-	opts?: ISetupOptions
+	options?: ISetupOptions
 ): IMountable<T> {
-	const projector = opts?.projector || createProjector();
+	const projector = options?.projector || createProjector();
 
 	const actions: {
 		[key: string]: IActionFn<T>;
@@ -229,7 +230,7 @@ export function setup<T extends PropsWithFields>(
 
 		function validEdge(edges: Array<IStateNode<T>>): IStateNode<T> | undefined {
 			if (!edges) return undefined;
-			return edges.find(x => {
+			return edges.find((x) => {
 				return x.guard(props);
 			});
 		}
@@ -251,11 +252,11 @@ export function setup<T extends PropsWithFields>(
 			if (Object.prototype.hasOwnProperty.call(routes, key)) {
 				const entry = routes[key];
 				// Console.log("testing", entry)
-				const res = entry.spec.test(window.location.pathname);
-				if (res) {
+				const result = entry.spec.test(window.location.pathname);
+				if (result) {
 					// Console.log("found route", res)
 					entry.calculator(
-						{key, path: entry.spec.path, data: res},
+						{key, path: entry.spec.path, data: result},
 						modelPresenter
 					);
 				}
@@ -283,16 +284,16 @@ export function setup<T extends PropsWithFields>(
 				evt: InputEvent | Event,
 				skipValidation?: boolean
 			): void => {
-				let val;
+				let value: string | any[];
 				if (typeof evt === typeof InputEvent) {
-					val = (evt as InputEvent).data;
+					value = (evt as InputEvent).data;
 				} else {
-					val = (evt.target as HTMLInputElement).value;
+					value = (evt.target as HTMLInputElement).value;
 				}
 
-				this.modelProps.registeredFieldsValues[key] = val;
+				this.modelProps.registeredFieldsValues[key] = value;
 
-				if (val.length > 0) {
+				if (value.length > 0) {
 					this.modelProps.registeredFieldsState[key].dirty = true; // Latching switch
 				}
 
@@ -304,17 +305,17 @@ export function setup<T extends PropsWithFields>(
 			const validate = (): void => {
 				const v = this.modelProps.registeredFieldsState[key].validation;
 				if (v) {
-					const val = this.modelProps.registeredFieldsValues[key];
+					const value = this.modelProps.registeredFieldsValues[key];
 					const errors: string[] = [];
-					if (v.notEmpty && (!val || val === '')) {
+					if (v.notEmpty && (!value || value === '')) {
 						errors.push(v.notEmpty.message);
 					}
 
-					if (v.minLength && val.length < v.minLength.value) {
+					if (v.minLength && value.length < v.minLength.value) {
 						errors.push(v.minLength.message);
 					}
 
-					if (v.maxLength && val.length > v.maxLength.value) {
+					if (v.maxLength && value.length > v.maxLength.value) {
 						errors.push(v.maxLength.message);
 					}
 

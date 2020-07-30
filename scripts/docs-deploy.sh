@@ -3,6 +3,8 @@
 # abort on errors
 set -e
 
+NODE_ENV=production
+
 # build
 npm run docs:build
 npm run docs:html
