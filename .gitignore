@@ -12,3 +12,4 @@ src/**.js
 coverage
 .nyc_output
 *.log
+coverage.lcov
