@@ -15,3 +15,7 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build:main
+      - run: npm run send-coverage
+      - uses: codecov/codecov-action@v1
+        with:
+          file: ./coverage/lcov.info
