@@ -376,6 +376,7 @@ export function setup<T extends PropsWithFields>(
 			};
 		}
 	};
+
 	window.onpopstate = () => {
 		applyRouteFunction();
 	};
