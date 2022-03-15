@@ -1,6 +1,6 @@
 import test from 'ava';
 import {
-	IFunFrets,
+	FunFrets,
 	PropsWithFields,
 	setup
 } from './index';
@@ -22,7 +22,7 @@ class SimpleProps extends PropsWithFields {
 	public checkValue = 0;
 }
 
-type main = IFunFrets<SimpleProps>;
+type main = FunFrets<SimpleProps>;
 
 test('FRETS initializes with simple types', t => {
 	const app = setup<SimpleProps>(new SimpleProps(), (f: main) => {
@@ -207,7 +207,7 @@ test("registers and updates a field", (t) => {
 			t.truthy(field.value);
       return h("div", [
         h("button", ["Load Messages"]),
-				h("input", { type: "text", oninput: field.handler, value: field.value.toString()}),
+				h("input", { type: "text", onchange: field.handler, value: field.value.toString()}),
         h("div.output", [field.value]),
       ]);
     });
@@ -220,8 +220,44 @@ test("registers and updates a field", (t) => {
 	input.setTargetDomNode(inputElement);
   t.truthy(input.exists);
   t.is(proj.query(".output").textContent, "a");
-	proj.query("input").simulate.keyPress("b", "", "ab")
+	inputElement = { value: 'ab' } as any;
+	input.simulate.change(inputElement)
   t.is(proj.query(".output").textContent, "ab");
+});
+
+test("validates a field", (t) => {
+  const mainApp = setup<SimpleProps>(new SimpleProps(), (f) => {
+
+		f.registerView((app: main): VNode => {
+			const field2 = f.registerField("test2", "", { notEmpty: {value: true, message: "missing"}, minLength: {value: 2, message: "short"}, maxLength: {value: 2, message: "long"} });
+
+      return h("div", [
+				h("input", { type: "text", onchange: field2.handler, value: field2.value.toString() }),
+				h("div.message", [field2.validationErrors]),
+        h("div.output", [field2.value]),
+      ]);
+    });
+  });
+	const proj = createTestProjector(mainApp.stateRenderer);
+  const input = proj.query("input");
+	let inputElement: HTMLInputElement; // not really useful in this particular application, but added just for demonstration purposes.
+	proj.initialize(mainApp.stateRenderer);
+	inputElement = { value: '' } as any;
+	input.setTargetDomNode(inputElement);
+  t.truthy(input.exists);
+  t.is(proj.query(".output").textContent, "");
+	inputElement = { value: 'b' } as any;
+	input.simulate.change(inputElement)
+	t.is(proj.query(".output").textContent, "b");
+	t.is(proj.query(".message").textContent, "short");
+	inputElement = { value: 'bc' } as any;
+	input.simulate.change(inputElement)
+	t.is(proj.query(".output").textContent, "bc");
+	t.is(proj.query(".message").textContent, "");
+	inputElement = { value: 'bcd' } as any;
+	input.simulate.change(inputElement)
+	t.is(proj.query(".output").textContent, "bcd");
+	t.is(proj.query(".message").textContent, "long");
 });
 
 // test("register view async", (t) => {

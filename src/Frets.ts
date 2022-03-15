@@ -1,139 +1,43 @@
-import {createProjector, Projector, VNode} from 'maquette';
+import {createProjector, VNode} from 'maquette';
+import {Path} from 'path-parser';
+import {
+	FunFrets,
+	Mountable,
+	RegisteredField,
+	SetupOptions,
+	ActionFn,
+	RouteActionFn,
+	ActionEventHandler,
+	StateNode,
+	Present,
+	ModelPresenter,
+} from './Frets.types';
 // Import * as maquette from 'maquette';
 
-import {Path} from 'path-parser';
-import {PropsWithFields} from './props-field-registry';
-
-export interface IValidationObject {
-	notEmpty?: {
-		value: boolean;
-		message: string;
-	};
-	minLength?: {
-		value: number;
-		message: string;
-	};
-	maxLength?: {
-		value: number;
-		message: string;
-	};
-}
-type handlerFn = (evt: Event, skipValidation?: boolean) => void;
-
-export interface IRegisteredField<T> {
-	handler: handlerFn;
-	validate: () => void;
-	validationErrors: string[];
-	isValid: () => boolean;
-	isDirty: () => boolean;
-	value: T;
-	clear: () => void;
-	key: string;
-}
-
-export interface IRouteRegistry<T> {
-	[key: string]: {
-		calculator: (routeName: string, routeParams: any, props: Readonly<T>) => T;
-		spec: Path;
-	};
-}
-type ActionFn<T> = (e: Event, data: Readonly<T>) => Partial<T>;
-type RouteActionFn<T extends PropsWithFields> = (
-	context: {
-		key: string;
-		path: string;
-		data: any;
-	},
-	present: IPresent<T>
-) => void;
-
-export interface IActionsObj<V> {
-	[k: string]: ActionFn<V>;
-}
-/**
- * FRETS class is the main way to instantiate a new application and hang your models, actions, and state off it
- * @template T, U
- */
-
-export type IPresent<T extends PropsWithFields> = (
-	proposal: Partial<T>
-) => void;
-export type IActionEventHandler = (event: Event) => void;
-export type IActionFn<T extends PropsWithFields> = (
-	event: Event,
-	present: IPresent<T>
-) => void;
-export type IModelPresenter<T extends PropsWithFields> = (
-	proposal: Partial<T>,
-	state: (props: Partial<T>) => void
-) => void;
-export type IRegisterFieldFn = <U>(
-	key: string,
-	defaultValue?: U,
-	validation?: IValidationObject
-) => IRegisteredField<U>;
-export interface IFunFrets<T extends PropsWithFields> {
-	modelProps: T;
-	present: (proposal: Partial<T>) => void;
-	projector: Projector;
-	registerView: (renderFn: (app: IFunFrets<T>) => VNode) => void;
-	registerField: IRegisterFieldFn;
-	registerAction: (key: string, actionFn: IActionFn<T>) => IActionEventHandler;
-	registerRouteAction: (
-		key: string,
-		path: string,
-		actionFn: RouteActionFn<T>
-	) => void;
-	registerAcceptor: (presenterFn: IModelPresenter<T>) => void;
-	registerStateGraph: (entryState: IStateNode<T>) => void;
-	currentStateNode: IStateNode<T>;
-	getRouteLink: (key: string, data?: any) => string | false;
-	navToRoute: (key: string, data?: any) => void;
-	navToPath: (key: string, data?: any) => void;
-}
-
-export interface IMountable<T extends PropsWithFields> {
-	fretsApp: IFunFrets<T>;
-	mountTo: (id: string) => void;
-	stateRenderer: () => VNode;
-	present: (proposal: Partial<T>) => void;
-}
-export interface ISetupOptions {
-	projector: Projector;
-}
-
-export interface IStateNode<T extends PropsWithFields> {
-	name: string;
-	guard?: (modelProps: T) => boolean;
-	edges?: Array<IStateNode<T>>;
-	renderer: (app: IFunFrets<T>) => VNode;
-}
+import {PropsWithFields, ValidationObject} from './props-field-registry';
 
 export function setup<T extends PropsWithFields>(
 	modelProps: T,
-	setupFn: (fretsApp: IFunFrets<T>) => void,
-	options?: ISetupOptions
-): IMountable<T> {
+	setupFn: (fretsApp: FunFrets<T>) => void,
+	options?: SetupOptions,
+): Mountable<T> {
 	const projector = options?.projector || createProjector();
 
-	const actions: {
-		[key: string]: IActionFn<T>;
-	} = {};
+	const actions: Record<string, ActionFn<T>> = {};
 
-	const routes: {
-		[key: string]: {
+	const routes: Record<
+		string,
+		{
 			calculator: RouteActionFn<T>;
 			spec: Path;
-		};
-	} = {};
+		}
+	> = {};
 
-	const registeredFieldActions: {
-		[key: string]: IActionEventHandler;
-	} = {};
+	const registeredFieldActions: Record<string, ActionEventHandler> = {};
 
-	const stateGraph: {entry?: IStateNode<T>} = {};
+	const stateGraph: {entry?: StateNode<T>} = {};
 
-	let currentStateNode: IStateNode<T> | undefined;
+	let currentStateNode: StateNode<T> | undefined;
 	/**
 	 * Returns a path when given the key of a route that was previously registered.
 	 * @param  {string} key
@@ -168,7 +72,7 @@ export function setup<T extends PropsWithFields>(
 	function navToPath(path: string): void {
 		try {
 			window.history.pushState(modelProps, '', path);
-		} catch (error) {
+		} catch (error: unknown) {
 			console.warn('Error routing', error);
 			window.location.pathname = path;
 		}
@@ -176,7 +80,7 @@ export function setup<T extends PropsWithFields>(
 		applyRouteFunction();
 	}
 
-	const modelPresenters: {[k: string]: IPresent<T>} = {};
+	const modelPresenters: Record<string, Present<T>> = {};
 
 	function modelPresenter(proposal: Partial<T>): void {
 		for (const key in modelPresenters) {
@@ -191,8 +95,8 @@ export function setup<T extends PropsWithFields>(
 
 	function registerAction(
 		key: string,
-		actionFn: IActionFn<T>
-	): IActionEventHandler {
+		actionFn: ActionFn<T>,
+	): ActionEventHandler {
 		if (!actions[key]) {
 			actions[key] = actionFn;
 		}
@@ -205,16 +109,16 @@ export function setup<T extends PropsWithFields>(
 	function registerRouteAction(
 		key: string,
 		path: string,
-		actionFn: RouteActionFn<T>
+		actionFn: RouteActionFn<T>,
 	): void {
 		// Console.log("register route", key, path)
 		routes[key] = {
 			calculator: actionFn,
-			spec: new Path(path)
+			spec: new Path(path),
 		};
 	}
 
-	function registerAcceptor(presenterFn: IModelPresenter<T>): void {
+	function registerAcceptor(presenterFn: ModelPresenter<T>): void {
 		const acceptorId = presenterFn.toString().slice(0, 250);
 		if (!modelPresenters[acceptorId]) {
 			modelPresenters[acceptorId] = (proposal: Partial<T>) => {
@@ -223,19 +127,19 @@ export function setup<T extends PropsWithFields>(
 		}
 	}
 
-	function resolveState(props: T): IStateNode<T> {
+	function resolveState(props: T): StateNode<T> {
 		if (!stateGraph.entry) {
 			throw new Error('Cannot resolve current state.');
 		}
 
-		function validEdge(edges: Array<IStateNode<T>>): IStateNode<T> | undefined {
+		function validEdge(edges: Array<StateNode<T>>): StateNode<T> | undefined {
 			if (!edges) return undefined;
 			return edges.find((x) => {
 				return x.guard(props);
 			});
 		}
 
-		const nestedEdges = (s: IStateNode<T> | undefined): IStateNode<T> => {
+		const nestedEdges = (s: StateNode<T> | undefined): StateNode<T> => {
 			return (s && nestedEdges(validEdge(s.edges))) || s;
 		};
 
@@ -257,7 +161,7 @@ export function setup<T extends PropsWithFields>(
 					// Console.log("found route", res)
 					entry.calculator(
 						{key, path: entry.spec.path, data: result},
-						modelPresenter
+						modelPresenter,
 					);
 				}
 			}
@@ -266,7 +170,7 @@ export function setup<T extends PropsWithFields>(
 
 	let stateRenderer: () => VNode;
 
-	const F: IFunFrets<T> = {
+	const fretsInstance: FunFrets<T> = {
 		getRouteLink,
 		modelProps,
 		navToPath,
@@ -275,21 +179,19 @@ export function setup<T extends PropsWithFields>(
 		projector,
 		registerAcceptor,
 		registerAction,
-		registerField<S>(
+		registerField(
 			key: string,
-			initialValue?: S,
-			validation?: IValidationObject
-		): IRegisteredField<S> {
+			initialValue?: string,
+			validation?: ValidationObject,
+		): RegisteredField {
 			const handler = (
 				evt: InputEvent | Event,
-				skipValidation?: boolean
+				skipValidation?: boolean,
 			): void => {
-				let value: string | any[];
-				if (typeof evt === typeof InputEvent) {
-					value = (evt as InputEvent).data;
-				} else {
-					value = (evt.target as HTMLInputElement).value;
-				}
+				const value: string | any[] =
+					typeof evt === typeof InputEvent
+						? (evt as InputEvent).data
+						: (evt.target as HTMLInputElement).value;
 
 				this.modelProps.registeredFieldsValues[key] = value;
 
@@ -303,20 +205,29 @@ export function setup<T extends PropsWithFields>(
 			};
 
 			const validate = (): void => {
-				const v = this.modelProps.registeredFieldsState[key].validation;
-				if (v) {
-					const value = this.modelProps.registeredFieldsValues[key];
+				const {validation} =
+					fretsInstance.modelProps.registeredFieldsState[key];
+				if (validation) {
+					const value = fretsInstance.modelProps.registeredFieldsValues[key];
 					const errors: string[] = [];
-					if (v.notEmpty && (!value || value === '')) {
-						errors.push(v.notEmpty.message);
+					if (validation.notEmpty && (!value || value === '')) {
+						errors.push(validation.notEmpty.message);
 					}
 
-					if (v.minLength && value.length < v.minLength.value) {
-						errors.push(v.minLength.message);
+					if (
+						typeof value === 'string' &&
+						validation.minLength &&
+						value.length < validation.minLength.value
+					) {
+						errors.push(validation.minLength.message);
 					}
 
-					if (v.maxLength && value.length > v.maxLength.value) {
-						errors.push(v.maxLength.message);
+					if (
+						typeof value === 'string' &&
+						validation.maxLength &&
+						value.length > validation.maxLength.value
+					) {
+						errors.push(validation.maxLength.message);
 					}
 
 					this.modelProps.registeredFieldValidationErrors[key] = errors;
@@ -342,31 +253,33 @@ export function setup<T extends PropsWithFields>(
 					this.modelProps.registeredFieldValidationErrors[key] = [];
 				},
 				handler,
-				isDirty: () => this.modelProps.registeredFieldsState[key].dirty,
+				isDirty: () =>
+					fretsInstance.modelProps.registeredFieldsState[key].dirty,
 				isValid: () =>
-					!(this.modelProps.registeredFieldValidationErrors[key].length > 0),
+					this.modelProps.registeredFieldValidationErrors[key].length === 0,
 				key,
 				validate,
-				validationErrors: this.modelProps.registeredFieldValidationErrors[key],
-				value: this.modelProps.registeredFieldsValues[key]
+				validationErrors:
+					fretsInstance.modelProps.registeredFieldValidationErrors[key],
+				value: fretsInstance.modelProps.registeredFieldsValues[key],
 			};
 		},
 		registerRouteAction,
-		registerStateGraph(entryState: IStateNode<T>): void {
+		registerStateGraph(entryState: StateNode<T>): void {
 			stateGraph.entry = entryState;
 
 			this.currentStateNode = resolveState(modelProps);
 		},
 		currentStateNode,
-		registerView(renderFn: (fretsApp: IFunFrets<T>) => VNode) {
+		registerView(renderFn: (fretsApp: FunFrets<T>) => VNode) {
 			stateRenderer = () => {
 				return renderFn(this);
 			};
 
 			state = (newProps: Partial<T>): void => {
-				this.modelProps = {
-					...this.modelProps,
-					...newProps
+				fretsInstance.modelProps = {
+					...fretsInstance.modelProps,
+					...newProps,
 				};
 				if (stateGraph?.entry) {
 					this.currentStateNode = resolveState(this.modelProps);
@@ -374,22 +287,22 @@ export function setup<T extends PropsWithFields>(
 
 				projector.scheduleRender();
 			};
-		}
+		},
 	};
 
-	window.onpopstate = () => {
+	window.addEventListener('popstate', () => {
 		applyRouteFunction();
-	};
+	});
 
-	setupFn(F);
+	setupFn(fretsInstance);
 
 	return {
-		fretsApp: F,
-		mountTo: (id: string) => {
+		fretsApp: fretsInstance,
+		mountTo(id: string) {
 			// eslint-disable-next-line unicorn/prefer-query-selector
 			projector.replace(document.getElementById(id), stateRenderer);
 		},
 		present: modelPresenter,
-		stateRenderer
+		stateRenderer,
 	};
 }
