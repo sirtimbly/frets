@@ -1,6 +1,6 @@
 import test from 'ava';
 import {
-	IFunFrets,
+	FunFrets,
 	PropsWithFields,
 	setup
 } from './index';
@@ -22,7 +22,7 @@ class SimpleProps extends PropsWithFields {
 	public checkValue = 0;
 }
 
-type main = IFunFrets<SimpleProps>;
+type main = FunFrets<SimpleProps>;
 
 test('FRETS initializes with simple types', t => {
 	const app = setup<SimpleProps>(new SimpleProps(), (f: main) => {
