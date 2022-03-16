@@ -1,16 +1,26 @@
-import {IValidationObject} from './Frets';
+export interface ValidationConfiguration {
+	notEmpty?: {
+		value: boolean;
+		message: string;
+	};
+	minLength?: {
+		value: number;
+		message: string;
+	};
+	maxLength?: {
+		value: number;
+		message: string;
+	};
+}
 export class PropsWithFields {
-	public registeredFieldsValues: {
-		[key: string]: any;
-	} = {};
+	public registeredFieldsValues: Record<string, string | undefined> = {};
 
-	public registeredFieldsState: {
-		[key: string]: {dirty: boolean; validation: IValidationObject};
-	} = {};
+	public registeredFieldsState: Record<
+		string,
+		{dirty: boolean; validation: ValidationConfiguration}
+	> = {};
 
-	public registeredFieldValidationErrors: {
-		[key: string]: string[];
-	} = {};
+	public registeredFieldValidationErrors: Record<string, string[]> = {};
 
 	constructor(data?: any) {
 		Object.assign(this, data);

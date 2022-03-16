@@ -1,6 +1,5 @@
-import * as maquette from 'maquette';
-import { VNode, VNodeChild, VNodeChildren, VNodeProperties } from 'maquette';
-export { setup, IActionEventHandler, IActionFn, IFunFrets, IPresent, IMountable, IModelPresenter, IRegisteredField } from './Frets';
-export { PropsWithFields } from './props-field-registry';
-export { maquette };
-export { VNode, VNodeChild, VNodeProperties, VNodeChildren };
+export { VNode, VNodeChild, VNodeChildren, VNodeProperties } from 'maquette';
+export { setup } from './Frets';
+export { ActionEventHandler, ActionFn, FunFrets, Present, Mountable, ModelPresenter, RegisteredField, } from './Frets.types';
+export { PropsWithFields, ValidationConfiguration } from './props-field-registry';
+export * as maquette from 'maquette';

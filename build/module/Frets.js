@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.setup = void 0;
-const maquette_1 = require("maquette");
-const path_parser_1 = require("path-parser");
+import { createProjector } from 'maquette';
+import { Path } from 'path-parser';
 /**
  * Creates a Frets application, it takes initial modelProps for your data model, and a function to be called when first run
  * @param  {T} modelProps
@@ -10,8 +7,8 @@ const path_parser_1 = require("path-parser");
  * @param  {SetupOptions} options?
  * @returns Mountable
  */
-function setup(modelProps, setupFn, options) {
-    const projector = (options === null || options === void 0 ? void 0 : options.projector) || (0, maquette_1.createProjector)();
+export function setup(modelProps, setupFn, options) {
+    const projector = (options === null || options === void 0 ? void 0 : options.projector) || createProjector();
     const actions = {};
     const routes = {};
     const registeredFieldActions = {};
@@ -77,7 +74,7 @@ function setup(modelProps, setupFn, options) {
         // Console.log("register route", key, path)
         routes[key] = {
             calculator: actionFn,
-            spec: new path_parser_1.Path(path),
+            spec: new Path(path),
         };
     }
     function registerAcceptor(presenterFn) {
@@ -224,5 +221,4 @@ function setup(modelProps, setupFn, options) {
         stateRenderer,
     };
 }
-exports.setup = setup;
 //# sourceMappingURL=Frets.js.map

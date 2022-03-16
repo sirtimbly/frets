@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const maquette = require("maquette");
-exports.maquette = maquette;
+exports.maquette = exports.PropsWithFields = exports.setup = void 0;
 var Frets_1 = require("./Frets");
-exports.setup = Frets_1.setup;
+Object.defineProperty(exports, "setup", { enumerable: true, get: function () { return Frets_1.setup; } });
 var props_field_registry_1 = require("./props-field-registry");
-exports.PropsWithFields = props_field_registry_1.PropsWithFields;
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiaW5kZXguanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi9zcmMvaW5kZXgudHMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7QUFBQSxxQ0FBcUM7QUFjN0IsNEJBQVE7QUFYaEIsaUNBU2lCO0FBUmhCLHdCQUFBLEtBQUssQ0FBQTtBQVNOLCtEQUF1RDtBQUEvQyxpREFBQSxlQUFlLENBQUEifQ==
+Object.defineProperty(exports, "PropsWithFields", { enumerable: true, get: function () { return props_field_registry_1.PropsWithFields; } });
+exports.maquette = require("maquette");
+//# sourceMappingURL=index.js.map

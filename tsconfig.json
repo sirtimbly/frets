@@ -2,8 +2,8 @@
     "compilerOptions": {
         "outDir": "build/main",
         "declaration": true,
-        "inlineSourceMap": true,
-        //"sourceMap": true,
+        // "inlineSourceMap": true,
+        "sourceMap": true,
         "noImplicitAny": false,
         "skipLibCheck": true,
         "module": "commonjs",
