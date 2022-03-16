@@ -1,9 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const ava_1 = require("ava");
-const index_1 = require("./index");
-const maquette_1 = require("maquette");
-const maquette_query_1 = require("maquette-query");
+import test from 'ava';
+import { PropsWithFields, setup } from './index';
+import { h } from 'maquette';
+import { createTestProjector } from 'maquette-query';
 var SimpleScreens;
 (function (SimpleScreens) {
     SimpleScreens[SimpleScreens["Start"] = 0] = "Start";
@@ -11,15 +9,15 @@ var SimpleScreens;
     SimpleScreens[SimpleScreens["Home"] = 2] = "Home";
     SimpleScreens[SimpleScreens["About"] = 3] = "About";
 })(SimpleScreens || (SimpleScreens = {}));
-class SimpleProps extends index_1.PropsWithFields {
+class SimpleProps extends PropsWithFields {
     constructor() {
         super(...arguments);
         this.messages = [];
         this.checkValue = 0;
     }
 }
-(0, ava_1.default)('FRETS initializes with simple types', t => {
-    const app = (0, index_1.setup)(new SimpleProps(), (f) => {
+test('FRETS initializes with simple types', t => {
+    const app = setup(new SimpleProps(), (f) => {
         t.truthy(f.modelProps);
         t.truthy(f.modelProps.messages);
     });
@@ -27,8 +25,8 @@ class SimpleProps extends index_1.PropsWithFields {
 });
 // Test("renders default div", (t) => {
 // });
-(0, ava_1.default)('actions change state', t => {
-    const app = (0, index_1.setup)(new SimpleProps(), f => {
+test('actions change state', t => {
+    const app = setup(new SimpleProps(), f => {
         f.registerAcceptor((proposal, state) => {
             if (proposal.messages) {
                 f.modelProps.messages = proposal.messages;
@@ -39,13 +37,13 @@ class SimpleProps extends index_1.PropsWithFields {
             present({ messages: ['test'] });
         });
         f.registerView((fretsApp) => {
-            return (0, maquette_1.h)('div', [
-                (0, maquette_1.h)('button', { onclick: changeState }, ['Load Messages']),
-                (0, maquette_1.h)('ul', fretsApp.modelProps.messages.map(x => (0, maquette_1.h)('li', [x.toString()])))
+            return h('div', [
+                h('button', { onclick: changeState }, ['Load Messages']),
+                h('ul', fretsApp.modelProps.messages.map(x => h('li', [x.toString()])))
             ]);
         });
     });
-    const proj = (0, maquette_query_1.createTestProjector)(app.stateRenderer);
+    const proj = createTestProjector(app.stateRenderer);
     const list = proj.query('ul');
     t.falsy(list.children.length);
     const button = proj.query('button');
@@ -55,8 +53,8 @@ class SimpleProps extends index_1.PropsWithFields {
     t.falsy(list.children[0].children);
     t.is(list.children[0].text, 'test');
 });
-(0, ava_1.default)('change state but validator stops mutation', t => {
-    const mainApp = (0, index_1.setup)(new SimpleProps(), f => {
+test('change state but validator stops mutation', t => {
+    const mainApp = setup(new SimpleProps(), f => {
         f.registerAcceptor((proposal, state) => {
             if (proposal.checkValue < 0) {
                 f.modelProps.messages = ['Invalid'];
@@ -70,14 +68,14 @@ class SimpleProps extends index_1.PropsWithFields {
             propose({ checkValue: -1 });
         });
         f.registerView((app) => {
-            return (0, maquette_1.h)('div', [
-                (0, maquette_1.h)('button#valid', { onclick: setOne }, ['Set to 1']),
-                (0, maquette_1.h)('button#invalid', { onclick: setNegOne }, ['Set to -1']),
-                (0, maquette_1.h)('ul', app.modelProps.messages.map(x => (0, maquette_1.h)('li', [x.toString()])))
+            return h('div', [
+                h('button#valid', { onclick: setOne }, ['Set to 1']),
+                h('button#invalid', { onclick: setNegOne }, ['Set to -1']),
+                h('ul', app.modelProps.messages.map(x => h('li', [x.toString()])))
             ]);
         });
     });
-    const proj = (0, maquette_query_1.createTestProjector)(mainApp.stateRenderer);
+    const proj = createTestProjector(mainApp.stateRenderer);
     const list = proj.query('ul');
     t.falsy(list.children.length);
     const button1 = proj.query('button#valid');
@@ -87,8 +85,8 @@ class SimpleProps extends index_1.PropsWithFields {
     button2.simulate.click();
     t.is(list.children[0].text, 'Invalid');
 });
-(0, ava_1.default)('state updates async', t => {
-    const mainApp = (0, index_1.setup)(new SimpleProps(), f => {
+test('state updates async', t => {
+    const mainApp = setup(new SimpleProps(), f => {
         f.registerAcceptor((proposal, state) => {
             state(f.modelProps);
         });
@@ -100,13 +98,13 @@ class SimpleProps extends index_1.PropsWithFields {
             }, 50);
         });
         f.registerView((app) => {
-            return (0, maquette_1.h)('div', [
-                (0, maquette_1.h)('button', { onclick: timeoutdone }, ['Load Messages']),
-                (0, maquette_1.h)('ul', app.modelProps.messages.map(x => (0, maquette_1.h)('li', [x.toString()])))
+            return h('div', [
+                h('button', { onclick: timeoutdone }, ['Load Messages']),
+                h('ul', app.modelProps.messages.map(x => h('li', [x.toString()])))
             ]);
         });
     });
-    const proj = (0, maquette_query_1.createTestProjector)(mainApp.stateRenderer);
+    const proj = createTestProjector(mainApp.stateRenderer);
     const list = proj.query('ul');
     t.falsy(list.children.length);
     proj.query('button').simulate.click();
@@ -116,8 +114,8 @@ class SimpleProps extends index_1.PropsWithFields {
         t.is(list2.children[0].text, 'async');
     }, 100);
 });
-(0, ava_1.default)('state updates async model', t => {
-    const mainApp = (0, index_1.setup)(new SimpleProps(), f => {
+test('state updates async model', t => {
+    const mainApp = setup(new SimpleProps(), f => {
         f.registerAcceptor((proposal, state) => {
             if (proposal === null || proposal === void 0 ? void 0 : proposal.messages.length) {
                 f.modelProps.messages = proposal.messages;
@@ -132,13 +130,13 @@ class SimpleProps extends index_1.PropsWithFields {
             present({ messages: ['loading'] });
         });
         f.registerView((app) => {
-            return (0, maquette_1.h)('div', [
-                (0, maquette_1.h)('button', { onclick: timeoutdone }, ['Load Messages']),
-                (0, maquette_1.h)('ul', app.modelProps.messages.map(x => (0, maquette_1.h)('li', [x.toString()])))
+            return h('div', [
+                h('button', { onclick: timeoutdone }, ['Load Messages']),
+                h('ul', app.modelProps.messages.map(x => h('li', [x.toString()])))
             ]);
         });
     });
-    const proj = (0, maquette_query_1.createTestProjector)(mainApp.stateRenderer);
+    const proj = createTestProjector(mainApp.stateRenderer);
     const list = proj.query('ul');
     t.falsy(list.children.length);
     proj.query('button').simulate.click();
@@ -150,26 +148,26 @@ class SimpleProps extends index_1.PropsWithFields {
         t.is(list2.children[0].text, 'done');
     }, 100);
 });
-(0, ava_1.default)('registers a field', t => {
-    const mainApp = (0, index_1.setup)(new SimpleProps(), f => {
+test('registers a field', t => {
+    const mainApp = setup(new SimpleProps(), f => {
         const field = f.registerField('test', '0');
         t.is(f.modelProps.registeredFieldsValues.test, '0');
         t.is(field.value, '0');
     });
 });
-(0, ava_1.default)("registers and updates a field", (t) => {
-    const mainApp = (0, index_1.setup)(new SimpleProps(), (f) => {
+test("registers and updates a field", (t) => {
+    const mainApp = setup(new SimpleProps(), (f) => {
         f.registerView((app) => {
             const field = f.registerField("test", "a");
             t.truthy(field.value);
-            return (0, maquette_1.h)("div", [
-                (0, maquette_1.h)("button", ["Load Messages"]),
-                (0, maquette_1.h)("input", { type: "text", onchange: field.handler, value: field.value.toString() }),
-                (0, maquette_1.h)("div.output", [field.value]),
+            return h("div", [
+                h("button", ["Load Messages"]),
+                h("input", { type: "text", onchange: field.handler, value: field.value.toString() }),
+                h("div.output", [field.value]),
             ]);
         });
     });
-    const proj = (0, maquette_query_1.createTestProjector)(mainApp.stateRenderer);
+    const proj = createTestProjector(mainApp.stateRenderer);
     const input = proj.query("input");
     let inputElement; // not really useful in this particular application, but added just for demonstration purposes.
     proj.initialize(mainApp.stateRenderer);
@@ -181,18 +179,18 @@ class SimpleProps extends index_1.PropsWithFields {
     input.simulate.change(inputElement);
     t.is(proj.query(".output").textContent, "ab");
 });
-(0, ava_1.default)("validates a field", (t) => {
-    const mainApp = (0, index_1.setup)(new SimpleProps(), (f) => {
+test("validates a field", (t) => {
+    const mainApp = setup(new SimpleProps(), (f) => {
         f.registerView((app) => {
             const field2 = f.registerField("test2", "", { notEmpty: { value: true, message: "missing" }, minLength: { value: 2, message: "short" }, maxLength: { value: 2, message: "long" } });
-            return (0, maquette_1.h)("div", [
-                (0, maquette_1.h)("input", { type: "text", onchange: field2.handler, value: field2.value.toString() }),
-                (0, maquette_1.h)("div.message", [field2.validationErrors]),
-                (0, maquette_1.h)("div.output", [field2.value]),
+            return h("div", [
+                h("input", { type: "text", onchange: field2.handler, value: field2.value.toString() }),
+                h("div.message", [field2.validationErrors]),
+                h("div.output", [field2.value]),
             ]);
         });
     });
-    const proj = (0, maquette_query_1.createTestProjector)(mainApp.stateRenderer);
+    const proj = createTestProjector(mainApp.stateRenderer);
     const input = proj.query("input");
     let inputElement; // not really useful in this particular application, but added just for demonstration purposes.
     proj.initialize(mainApp.stateRenderer);
@@ -230,8 +228,8 @@ class SimpleProps extends index_1.PropsWithFields {
 //   const list = proj.query("ul");
 //   t.truthy(list.exists);
 // });
-(0, ava_1.default)('registers a route and changes when navigating', t => {
-    const mainApp = (0, index_1.setup)(new SimpleProps(), f => {
+test('registers a route and changes when navigating', t => {
+    const mainApp = setup(new SimpleProps(), f => {
         f.registerAcceptor((proposal, state) => {
             if (proposal.activeScreen) {
                 f.modelProps.activeScreen = proposal.activeScreen;
@@ -249,17 +247,17 @@ class SimpleProps extends index_1.PropsWithFields {
             });
         });
         f.registerView((app) => {
-            return (0, maquette_1.h)('div', [
+            return h('div', [
                 !app.modelProps.activeScreen ||
                     app.modelProps.activeScreen === SimpleScreens.Home
-                    ? (0, maquette_1.h)('h1', ['Home Page'])
-                    : (0, maquette_1.h)('h1', ['About Page'])
+                    ? h('h1', ['Home Page'])
+                    : h('h1', ['About Page'])
             ]);
         });
     });
     t.is(mainApp.fretsApp.getRouteLink('about'), '/about');
     t.false(mainApp.fretsApp.getRouteLink('xyz'));
-    const proj = (0, maquette_query_1.createTestProjector)(mainApp.stateRenderer);
+    const proj = createTestProjector(mainApp.stateRenderer);
     t.is(proj.query('h1').textContent, 'Home Page');
     mainApp.fretsApp.navToPath('/about');
     window.dispatchEvent(new Event('popstate'));
@@ -286,15 +284,15 @@ class SimpleProps extends index_1.PropsWithFields {
 //   t.falsy(msgs.exists());
 //   t.not(F.modelProps.messages[0], "try");
 // });
-class FormProps extends index_1.PropsWithFields {
+class FormProps extends PropsWithFields {
     constructor() {
         super(...arguments);
         this.status = 'draft';
         this.actionInProgress = 'load';
     }
 }
-(0, ava_1.default)("state graph resolves", (t) => {
-    const main = (0, index_1.setup)(new FormProps(), f => {
+test("state graph resolves", (t) => {
+    const main = setup(new FormProps(), f => {
         f.registerAcceptor((proposal, updateState) => {
             console.log('accepting', proposal);
             updateState(proposal);
@@ -307,47 +305,47 @@ class FormProps extends index_1.PropsWithFields {
                 {
                     name: 'submitted',
                     guard: (props) => props.status === 'submitted',
-                    renderer: () => (0, maquette_1.h)("span", ["submitted the form"])
+                    renderer: () => h("span", ["submitted the form"])
                 },
                 {
                     name: 'saved',
                     guard: (props) => Boolean(props.id),
-                    renderer: () => (0, maquette_1.h)("span", ["saved form"]),
+                    renderer: () => h("span", ["saved form"]),
                     edges: [
                         {
                             name: 'submitting',
                             guard: (props) => props.actionInProgress === 'submit',
-                            renderer: () => (0, maquette_1.h)("span", ["submitting"])
+                            renderer: () => h("span", ["submitting"])
                         }
                     ]
                 },
                 {
                     name: 'empty',
                     guard: (props) => !props.id && props.actionInProgress !== 'load',
-                    renderer: () => (0, maquette_1.h)("span", ["empty form screen"]),
+                    renderer: () => h("span", ["empty form screen"]),
                     edges: [
                         {
                             name: 'saving',
                             guard: (props) => (props.actionInProgress === 'save'),
-                            renderer: () => (0, maquette_1.h)("span", ["saving"])
+                            renderer: () => h("span", ["saving"])
                         }
                     ]
                 },
             ],
-            renderer: () => (0, maquette_1.h)("span", ["opening screen"])
+            renderer: () => h("span", ["opening screen"])
         });
         t.truthy(f.currentStateNode);
         const save = f.registerAction('save', (e, present) => {
             console.log('finished loading action');
             present({ actionInProgress: 'save' });
         });
-        f.registerView((app) => (0, maquette_1.h)('div', [
-            (0, maquette_1.h)('button#save', { onclick: save }, ['save']),
+        f.registerView((app) => h('div', [
+            h('button#save', { onclick: save }, ['save']),
             app.currentStateNode.renderer(app)
         ]));
     });
     t.is(main.fretsApp.modelProps.actionInProgress, 'load');
-    const proj = (0, maquette_query_1.createTestProjector)(main.stateRenderer);
+    const proj = createTestProjector(main.stateRenderer);
     t.is(proj.query('span').textContent, 'opening screen');
     // t.is(main.fretsApp.resolveState().name, 'opening')
     main.present({ actionInProgress: undefined });

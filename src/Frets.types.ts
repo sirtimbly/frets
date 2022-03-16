@@ -1,6 +1,6 @@
 import {Path} from 'path-parser';
 import {Projector, VNode} from 'maquette';
-import {PropsWithFields, ValidationObject} from './props-field-registry';
+import {PropsWithFields, ValidationConfiguration} from './props-field-registry';
 
 export type HandlerFn = (evt: Event, skipValidation?: boolean) => void;
 
@@ -54,8 +54,13 @@ export type ModelPresenter<T extends PropsWithFields> = (
 export type RegisterFieldFn = (
 	key: string,
 	defaultValue?: string,
-	validation?: ValidationObject,
+	validation?: ValidationConfiguration,
 ) => RegisteredField;
+
+/**
+ * Primary controlling object for registering your app logic and interacting with routing.
+ * This is returned by the `setup()` function
+ */
 export interface FunFrets<T extends PropsWithFields> {
 	modelProps: T;
 	present: (proposal: Partial<T>) => void;

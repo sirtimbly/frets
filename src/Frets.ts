@@ -14,8 +14,14 @@ import {
 } from './Frets.types';
 // Import * as maquette from 'maquette';
 
-import {PropsWithFields, ValidationObject} from './props-field-registry';
-
+import {PropsWithFields, ValidationConfiguration} from './props-field-registry';
+/**
+ * Creates a Frets application, it takes initial modelProps for your data model, and a function to be called when first run
+ * @param  {T} modelProps
+ * @param  {(fretsApp:FunFrets<T>)=>void} setupFn
+ * @param  {SetupOptions} options?
+ * @returns Mountable
+ */
 export function setup<T extends PropsWithFields>(
 	modelProps: T,
 	setupFn: (fretsApp: FunFrets<T>) => void,
@@ -182,7 +188,7 @@ export function setup<T extends PropsWithFields>(
 		registerField(
 			key: string,
 			initialValue?: string,
-			validation?: ValidationObject,
+			validation?: ValidationConfiguration,
 		): RegisteredField {
 			const handler = (
 				evt: InputEvent | Event,

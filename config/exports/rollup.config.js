@@ -12,7 +12,6 @@ const substituteModulePaths = {
 
 export default {
     input: 'build/module/index.js',
-    sourceMap: true,
     plugins: [
         alias(substituteModulePaths),
         nodeResolve({
@@ -23,7 +22,7 @@ export default {
                 // left-hand side can be an absolute path, a path
                 // relative to the current directory, or the name
                 // of a module in node_modules
-                'maquette': ['Projector', 'createProjector']
+                'node_modules/maquette/dist/maquette.umd.js': ['Projector', 'createProjector']
             }
         })
     ]

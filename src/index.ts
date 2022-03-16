@@ -10,6 +10,6 @@ export {
 	ModelPresenter,
 	RegisteredField,
 } from './Frets.types';
-export {PropsWithFields, ValidationObject} from './props-field-registry';
+export {PropsWithFields, ValidationConfiguration} from './props-field-registry';
 
 export * as maquette from 'maquette';

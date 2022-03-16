@@ -1,4 +1,4 @@
-export interface ValidationObject {
+export interface ValidationConfiguration {
 	notEmpty?: {
 		value: boolean;
 		message: string;
@@ -17,7 +17,7 @@ export class PropsWithFields {
 
 	public registeredFieldsState: Record<
 		string,
-		{dirty: boolean; validation: ValidationObject}
+		{dirty: boolean; validation: ValidationConfiguration}
 	> = {};
 
 	public registeredFieldValidationErrors: Record<string, string[]> = {};

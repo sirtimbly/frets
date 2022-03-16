@@ -16,7 +16,7 @@ module.exports = {
         link: 'https://github.com/sirtimbly/frets/'
       },
       {
-        text: 'API Docss',
+        text: 'API Docs',
         link: 'https://sirtimbly.github.io/frets/api/'
       },
     ],
@@ -25,7 +25,7 @@ module.exports = {
       '/guide/',
       '/guide/layers',
       '/guide/components',
-      '/guide/philosophy'      
+      '/guide/philosophy'
     ]
   }
 }
