@@ -7,7 +7,7 @@
     <meta name="generator" content="VuePress 1.5.2">
     
     <meta name="description" content="Docs for the Library">
-    <link rel="preload" href="/frets/assets/css/0.styles.85f58d42.css" as="style"><link rel="preload" href="/frets/assets/js/app.daea4356.js" as="script"><link rel="preload" href="/frets/assets/js/2.9abfb435.js" as="script"><link rel="preload" href="/frets/assets/js/10.9379e2cc.js" as="script"><link rel="prefetch" href="/frets/assets/js/3.b27ad403.js"><link rel="prefetch" href="/frets/assets/js/4.df1a2256.js"><link rel="prefetch" href="/frets/assets/js/5.c3d22a72.js"><link rel="prefetch" href="/frets/assets/js/6.5f1935f0.js"><link rel="prefetch" href="/frets/assets/js/7.3c38e9ac.js"><link rel="prefetch" href="/frets/assets/js/8.ee6642a4.js"><link rel="prefetch" href="/frets/assets/js/9.48b69b53.js">
+    <link rel="preload" href="/frets/assets/css/0.styles.85f58d42.css" as="style"><link rel="preload" href="/frets/assets/js/app.73bbba34.js" as="script"><link rel="preload" href="/frets/assets/js/2.9abfb435.js" as="script"><link rel="preload" href="/frets/assets/js/10.0f721f9b.js" as="script"><link rel="prefetch" href="/frets/assets/js/3.b27ad403.js"><link rel="prefetch" href="/frets/assets/js/4.df1a2256.js"><link rel="prefetch" href="/frets/assets/js/5.c3d22a72.js"><link rel="prefetch" href="/frets/assets/js/6.7e53dc4d.js"><link rel="prefetch" href="/frets/assets/js/7.68097695.js"><link rel="prefetch" href="/frets/assets/js/8.b46b8ca6.js"><link rel="prefetch" href="/frets/assets/js/9.48b69b53.js">
     <link rel="stylesheet" href="/frets/assets/css/0.styles.85f58d42.css">
   </head>
   <body>
@@ -32,20 +32,20 @@
   edges<span class="token operator">:</span> <span class="token punctuation">[</span>
     <span class="token punctuation">{</span>
       name<span class="token operator">:</span> <span class="token string">&quot;loading&quot;</span><span class="token punctuation">,</span>
-      <span class="token function-variable function">guard</span><span class="token operator">:</span> <span class="token parameter">props</span> <span class="token operator">=&gt;</span> props<span class="token punctuation">.</span>loading<span class="token punctuation">,</span>
-      <span class="token function-variable function">renderer</span><span class="token operator">:</span> <span class="token parameter">app</span> <span class="token operator">=&gt;</span>
+      <span class="token function-variable function">guard</span><span class="token operator">:</span> props <span class="token operator">=&gt;</span> props<span class="token punctuation">.</span>loading<span class="token punctuation">,</span>
+      <span class="token function-variable function">renderer</span><span class="token operator">:</span> app <span class="token operator">=&gt;</span>
         PassiveText<span class="token punctuation">.</span><span class="token function">h</span><span class="token punctuation">(</span><span class="token punctuation">[</span>
           <span class="token template-string"><span class="token template-punctuation string">`</span><span class="token string">Logging </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>app<span class="token punctuation">.</span>modelProps<span class="token punctuation">.</span>logout <span class="token operator">?</span> <span class="token string">&quot;Out&quot;</span> <span class="token operator">:</span> <span class="token string">&quot;In&quot;</span><span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">...</span><span class="token template-punctuation string">`</span></span>
         <span class="token punctuation">]</span><span class="token punctuation">)</span>
     <span class="token punctuation">}</span><span class="token punctuation">,</span>
     <span class="token punctuation">{</span>
       name<span class="token operator">:</span> <span class="token string">&quot;loggedIn&quot;</span><span class="token punctuation">,</span>
-      <span class="token function-variable function">guard</span><span class="token operator">:</span> <span class="token parameter">props</span> <span class="token operator">=&gt;</span> <span class="token function">Boolean</span><span class="token punctuation">(</span>props<span class="token punctuation">.</span>accountId<span class="token punctuation">)</span><span class="token punctuation">,</span>
-      <span class="token function-variable function">renderer</span><span class="token operator">:</span> <span class="token parameter">app</span> <span class="token operator">=&gt;</span>
+      <span class="token function-variable function">guard</span><span class="token operator">:</span> props <span class="token operator">=&gt;</span> <span class="token function">Boolean</span><span class="token punctuation">(</span>props<span class="token punctuation">.</span>accountId<span class="token punctuation">)</span><span class="token punctuation">,</span>
+      <span class="token function-variable function">renderer</span><span class="token operator">:</span> app <span class="token operator">=&gt;</span>
         <span class="token function">LoggedIn</span><span class="token punctuation">(</span><span class="token punctuation">{</span> accountId<span class="token operator">:</span> app<span class="token punctuation">.</span>modelProps<span class="token punctuation">.</span>accountId<span class="token punctuation">,</span> logoutAction <span class="token punctuation">}</span><span class="token punctuation">)</span>
     <span class="token punctuation">}</span>
   <span class="token punctuation">]</span><span class="token punctuation">,</span>
-  <span class="token function-variable function">renderer</span><span class="token operator">:</span> <span class="token parameter">app</span> <span class="token operator">=&gt;</span>
+  <span class="token function-variable function">renderer</span><span class="token operator">:</span> app <span class="token operator">=&gt;</span>
     <span class="token function">TextFieldForm</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
       textFields<span class="token operator">:</span> <span class="token punctuation">[</span>
         app<span class="token punctuation">.</span><span class="token function">registerField</span><span class="token punctuation">(</span><span class="token string">&quot;Username&quot;</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
@@ -56,6 +56,6 @@
     <span class="token punctuation">}</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre></div></div> <footer class="page-edit"><!----> <!----></footer> <!----> </main></div><div class="global-ui"></div></div>
-    <script src="/frets/assets/js/app.daea4356.js" defer></script><script src="/frets/assets/js/2.9abfb435.js" defer></script><script src="/frets/assets/js/10.9379e2cc.js" defer></script>
+    <script src="/frets/assets/js/app.73bbba34.js" defer></script><script src="/frets/assets/js/2.9abfb435.js" defer></script><script src="/frets/assets/js/10.0f721f9b.js" defer></script>
   </body>
 </html>
