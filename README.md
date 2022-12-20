@@ -1,7 +1,8 @@
 # FRETS (Functional, Reactive, entirely TypeScript)
 ## An Ultralight Composable Frontend TypeScript Web Framework
 <p style="text-align: center">
-  <img alt="GitHub Workflow Status (branch)" src="https://img.shields.io/github/workflow/status/sirtimbly/frets/NPM%20Release/master">
+      
+  <img alt="GitHub Workflow Status (master)" src="https://img.shields.io/github/actions/workflow/status/sirtimbly/frets/integrate.yml?branch=master">
   <a href="https://www.npmjs.com/package/frets"><img src="https://badge.fury.io/js/frets.svg" alt="npm version" height="20"></a>
   <img alt="Libraries.io dependency status for latest release" src="https://img.shields.io/librariesio/release/npm/frets">
   <a href="https://codecov.io/gh/sirtimbly/frets">
