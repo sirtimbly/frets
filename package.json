@@ -87,7 +87,7 @@
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-terser": "~5.3.0",
-    "semantic-release": "^17.1.1",
+    "semantic-release": "^21.0.1",
     "sleep-ms": "^2.0.1",
     "sorcery": "^0.10.0",
     "standard-version": "^8.0.2",
@@ -96,7 +96,7 @@
     "typedoc": "^0.17.8",
     "typescript": "^3.9.7",
     "vuepress": "^1.5.2",
-    "xo": "^0.32.1"
+    "xo": "^0.54.1"
   },
   "keywords": [
     "framework",
